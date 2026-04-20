@@ -1,13 +1,20 @@
 # Spacer
 
-@TODO: Insert a logo here.
+![Spacer logo](logo.svg)
 
 Spacer is a command-line tool and TUI for managing multiple code projects. It's
 written in Rust to be blazing fast.
 
 ## Table of Contents
 
-@TODO: Insert a table of contents here.
+- [Description](#description)
+- [Use Cases](#use-cases)
+  - [Initializing Spacer](#initializing-spacer)
+  - [Creating a new project](#creating-a-new-project)
+  - [Starting a new change](#starting-a-new-change)
+  - [Navigating between projects and changes](#navigating-between-projects-and-changes)
+- [Design](#design)
+- [License](#license)
 
 ## Description
 
@@ -65,5 +72,3 @@ this tool.
 ## License
 
 MIT licensed. See [LICENSE](LICENSE) for more details.
-
-@TODO: Add the license file.
