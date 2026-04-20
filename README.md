@@ -65,9 +65,8 @@ The starting point for creating a new Spacer space is initializing a Spacer root
 directory where the code will be stored. This can be set via the environment
 variable `SPACER_ROOT` or by running `spacer init` in the desired directory.
 
-Once the root directory is set, you can create new spaces and projects within its
-This can be done using the CLI or TUI; we recommend the TUI for anyone new to
-this tool.
+Once the root directory is set, you can create new spaces and projects. This can
+be done using the CLI or TUI; we recommend the TUI for anyone new to this tool.
 
 ## License
 
