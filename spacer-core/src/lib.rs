@@ -36,6 +36,8 @@ pub struct Config {
     pub changes: Vec<Change>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub active_space: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub active_project: Option<String>,
 }
 
 /// Returns the default Spacer root: `$SPACER_ROOT` env var or the current directory.
@@ -131,6 +133,31 @@ impl Workspace {
             bail!("space '{}' not found", name);
         }
         self.config.active_space = Some(name.to_string());
+        Ok(())
+    }
+
+    // -------------------------------------------------------------------------
+    // Active project
+    // -------------------------------------------------------------------------
+
+    /// Returns the active project name. `SPACER_PROJECT` env var takes priority
+    /// over the value persisted by `set_active_project`.
+    pub fn active_project(&self) -> Option<String> {
+        if let Ok(p) = std::env::var("SPACER_PROJECT") {
+            if !p.is_empty() {
+                return Some(p);
+            }
+        }
+        self.config.active_project.clone()
+    }
+
+    /// Persists an active project to the config. The project must exist in the
+    /// given space. Returns an error if either is not found.
+    pub fn set_active_project(&mut self, name: &str, space: &str) -> Result<()> {
+        if !self.config.projects.iter().any(|p| p.name == name && p.space == space) {
+            bail!("project '{}' in space '{}' not found", name, space);
+        }
+        self.config.active_project = Some(name.to_string());
         Ok(())
     }
 
