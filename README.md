@@ -36,37 +36,111 @@ changes, making it easier to manage multiple projects simultaneously.
 
 ### Initializing Spacer
 
-@TODO: Add examples of the different ways Spacer can be initialized.
+Initialize Spacer in the current directory:
+
+```sh
+spacer workspace init
+```
+
+Or point Spacer at an existing directory without changing into it:
+
+```sh
+SPACER_ROOT=/path/to/code spacer workspace init
+```
 
 ### Creating a new project
 
-@TODO: Add examples of creating a new Spacer space and project using both the CLI and TUI.
+Create a space, set it as the active context, then create a project inside it:
+
+```sh
+spacer space create my-org
+spacer space use my-org
+
+spacer project create my-repo
+```
+
+Without an active space, pass `--space` explicitly:
+
+```sh
+spacer project create my-repo --space my-org
+```
+
+List spaces and projects:
+
+```sh
+spacer space list
+# * my-org   /path/to/code/my-org
+
+spacer project list
+#   my-org   my-repo   /path/to/code/my-org/my-repo
+```
 
 ### Starting a new change
 
-@TODO: Add examples that show the full lifecycle of a change starting from creation to code updates and finally saving the change.
+Start a change (creates a tracking entry for a branch or worktree):
+
+```sh
+spacer change start feature-x --project my-repo
+```
+
+List active changes:
+
+```sh
+spacer change list
+#   my-org   my-repo   feature-x
+```
+
+When the work is done, finish the change:
+
+```sh
+spacer change finish feature-x --project my-repo
+```
+
+> **Note:** `finish` removes the change from Spacer's tracking. It does not
+> delete the underlying git branch or worktree — that remains your responsibility.
 
 ### Navigating between projects and changes
 
-@TODO: Add examples that show how you can quickly navigate between projects and changes using both the CLI and TUI.
+Launch the TUI to browse spaces, projects, and changes interactively:
+
+```sh
+spacer
+```
+
+| Key | Action |
+|---|---|
+| `Tab` | Switch between Spaces / Projects / Changes tabs |
+| `j` / `↓` | Move selection down |
+| `k` / `↑` | Move selection up |
+| `q` / `Ctrl-C` | Quit |
 
 ## Design
 
-We introduce introduces the following concepts:
+Spacer organises code into a four-level hierarchy:
 
-- Space: A collection of projects. This is useful for grouping related projects
-together for cleanliness.
-- Project: Directory containing the main code.
-- Change: A change is a set of files that are being work on. This is useful for
-keeping track of what files are being worked on and for easily switching between
- different changes.  
+```
+workspace/                  ← root directory ($SPACER_ROOT)
+├── .spacer/
+│   └── config.json
+├── my-org/                 ← space
+│   ├── my-repo/            ← project
+│   │   ├── main/           ← change (git worktree)
+│   │   └── feature-branch/ ← change (git worktree)
+│   └── another-repo/
+└── another-org/
+    └── ...
+```
 
-The starting point for creating a new Spacer space is initializing a Spacer root
-directory where the code will be stored. This can be set via the environment
-variable `SPACER_ROOT` or by running `spacer init` in the desired directory.
+| Concept | Analogous to | Description |
+|---|---|---|
+| **Workspace** | Local machine | The root directory where all code lives, set via `$SPACER_ROOT` |
+| **Space** | GitHub organisation | A named grouping of related projects |
+| **Project** | Git repository | A single codebase living inside a space |
+| **Change** | Git worktree | An isolated working directory for a branch or task within a project |
 
-Once the root directory is set, you can create new spaces and projects. This can
-be done using the CLI or TUI; we recommend the TUI for anyone new to this tool.
+The starting point is initializing a workspace with `spacer workspace init` in
+the desired root directory, or by setting the `SPACER_ROOT` environment variable.
+From there, spaces, projects, and changes can be created using the CLI or TUI.
 
 ## License
 

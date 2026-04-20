@@ -25,6 +25,11 @@ pub enum SpaceCommands {
         /// Name of the space to delete
         name: String,
     },
+    /// Set the active space (used when --space is omitted)
+    Use {
+        /// Name of the space to activate
+        name: String,
+    },
 }
 
 pub fn run(args: SpaceArgs) -> Result<()> {
@@ -39,11 +44,13 @@ pub fn run(args: SpaceArgs) -> Result<()> {
         }
         SpaceCommands::List => {
             let spaces = ws.spaces();
+            let active = ws.active_space();
             if spaces.is_empty() {
                 println!("No spaces found. Create one with `spacer space create <name>`.");
             } else {
                 for space in spaces {
-                    println!("{:20} {}", space.name, space.path.display());
+                    let marker = if active.as_deref() == Some(space.name.as_str()) { '*' } else { ' ' };
+                    println!("{} {:20} {}", marker, space.name, space.path.display());
                 }
             }
         }
@@ -51,6 +58,11 @@ pub fn run(args: SpaceArgs) -> Result<()> {
             ws.delete_space(&name)?;
             ws.save()?;
             println!("Deleted space '{}'", name);
+        }
+        SpaceCommands::Use { name } => {
+            ws.set_active_space(&name)?;
+            ws.save()?;
+            println!("Now using space '{}'", name);
         }
     }
 

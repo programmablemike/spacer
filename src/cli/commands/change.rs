@@ -16,14 +16,15 @@ pub enum ChangeCommands {
         /// Project the change belongs to
         #[arg(long)]
         project: String,
-        /// Space the project lives in
+        /// Space the project lives in (defaults to active space)
         #[arg(long)]
-        space: String,
+        space: Option<String>,
     },
     /// List changes (optionally filtered by project/space)
     List {
         #[arg(long)]
         project: Option<String>,
+        /// Defaults to active space
         #[arg(long)]
         space: Option<String>,
     },
@@ -34,10 +35,17 @@ pub enum ChangeCommands {
         /// Project the change belongs to
         #[arg(long)]
         project: String,
-        /// Space the project lives in
+        /// Space the project lives in (defaults to active space)
         #[arg(long)]
-        space: String,
+        space: Option<String>,
     },
+}
+
+fn resolve_space(flag: Option<String>, ws: &spacer_core::Workspace) -> Result<String> {
+    flag.or_else(|| ws.active_space())
+        .ok_or_else(|| anyhow::anyhow!(
+            "no space specified — use --space or set one with `spacer space use <name>`"
+        ))
 }
 
 pub fn run(args: ChangeArgs) -> Result<()> {
@@ -46,11 +54,13 @@ pub fn run(args: ChangeArgs) -> Result<()> {
 
     match args.command {
         ChangeCommands::Start { name, project, space } => {
+            let space = resolve_space(space, &ws)?;
             ws.start_change(&name, &project, &space)?;
             ws.save()?;
             println!("Started change '{}' in project '{}/{}'", name, space, project);
         }
         ChangeCommands::List { project, space } => {
+            let space = space.or_else(|| ws.active_space());
             let changes = ws.changes(project.as_deref(), space.as_deref());
             if changes.is_empty() {
                 println!("No changes found.");
@@ -61,6 +71,7 @@ pub fn run(args: ChangeArgs) -> Result<()> {
             }
         }
         ChangeCommands::Finish { name, project, space } => {
+            let space = resolve_space(space, &ws)?;
             ws.finish_change(&name, &project, &space)?;
             ws.save()?;
             println!("Finished change '{}'", name);
