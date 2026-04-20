@@ -1,0 +1,18 @@
+schema-version = "1.11.0"
+
+[install]
+cargo.pkg-path = "cargo"
+
+[profile]
+common = '''
+  export PATH="$FLOX_ENV/bin:$PATH"
+'''
+
+[build.spacer]
+description = "A CLI and TUI tool for managing multiple code projects"
+version = "0.1.0"
+command = """
+  mkdir -p $out/bin
+  cargo build --release
+  cp target/release/spacer $out/bin/spacer
+"""

@@ -1,0 +1,30 @@
+[workspace]
+members = [".", "spacer-core"]
+
+[package]
+name = "spacer"
+version = "0.1.0"
+edition = "2021"
+description = "A CLI and TUI tool for managing multiple code projects"
+license = "MIT"
+repository = "https://github.com/programmablemike/spacer"
+
+[[bin]]
+name = "spacer"
+path = "src/main.rs"
+
+[dependencies]
+spacer-core = { path = "spacer-core" }
+clap = { version = "4", features = ["derive"] }
+ratatui = "0.29"
+crossterm = "0.28"
+anyhow = "1"
+
+[profile.release]
+strip = true
+opt-level = 3
+
+# The profile that 'dist' will build with
+[profile.dist]
+inherits = "release"
+lto = "thin"
