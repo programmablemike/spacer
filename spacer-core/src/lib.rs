@@ -9,7 +9,7 @@ mod workspace;
 pub mod store;
 
 pub use adapters::config::Config;
-pub use adapters::{ConfigAdapter, MemoryAdapter};
+pub use adapters::{ConfigAdapter, GitAdapter, MemoryAdapter};
 pub use change::Change;
 pub use project::Project;
 pub use space::Space;
