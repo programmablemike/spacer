@@ -1,4 +1,5 @@
 pub mod commands;
+pub mod mapper;
 
 use clap::{Parser, Subcommand};
 
