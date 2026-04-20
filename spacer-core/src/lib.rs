@@ -34,6 +34,8 @@ pub struct Config {
     pub spaces: Vec<Space>,
     pub projects: Vec<Project>,
     pub changes: Vec<Change>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub active_space: Option<String>,
 }
 
 /// Returns the default Spacer root: `$SPACER_ROOT` env var or the current directory.
@@ -105,6 +107,31 @@ impl Workspace {
     /// Returns a reference to the underlying config.
     pub fn config(&self) -> &Config {
         &self.config
+    }
+
+    // -------------------------------------------------------------------------
+    // Active space
+    // -------------------------------------------------------------------------
+
+    /// Returns the active space name. `SPACER_SPACE` env var takes priority
+    /// over the value persisted by `set_active_space`.
+    pub fn active_space(&self) -> Option<String> {
+        if let Ok(s) = std::env::var("SPACER_SPACE") {
+            if !s.is_empty() {
+                return Some(s);
+            }
+        }
+        self.config.active_space.clone()
+    }
+
+    /// Persists an active space to the config. Returns an error if the space
+    /// does not exist.
+    pub fn set_active_space(&mut self, name: &str) -> Result<()> {
+        if !self.config.spaces.iter().any(|s| s.name == name) {
+            bail!("space '{}' not found", name);
+        }
+        self.config.active_space = Some(name.to_string());
+        Ok(())
     }
 
     // -------------------------------------------------------------------------
