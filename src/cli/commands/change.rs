@@ -1,17 +1,9 @@
 use anyhow::Result;
 use clap::{Args, Subcommand};
-use tabled::{Table, Tabled};
+use tabled::Table;
 use tabled::settings::Style;
 
-#[derive(Tabled)]
-struct ChangeRow {
-    #[tabled(rename = "SPACE")]
-    space: String,
-    #[tabled(rename = "PROJECT")]
-    project: String,
-    #[tabled(rename = "NAME")]
-    name: String,
-}
+use crate::cli::mapper;
 
 #[derive(Args)]
 pub struct ChangeArgs {
@@ -53,7 +45,7 @@ pub enum ChangeCommands {
     },
 }
 
-fn resolve_space(flag: Option<String>, ws: &spacer_core::Workspace) -> Result<String> {
+fn resolve_space(flag: Option<String>, ws: &spacer_core::Workspace<impl spacer_core::Backend>) -> Result<String> {
     flag.or_else(|| ws.active_space())
         .ok_or_else(|| anyhow::anyhow!(
             "no space specified — use --space or set one with `spacer space use <name>`"
@@ -77,11 +69,7 @@ pub fn run(args: ChangeArgs) -> Result<()> {
             if changes.is_empty() {
                 println!("No changes found.");
             } else {
-                let rows: Vec<ChangeRow> = changes.iter().map(|c| ChangeRow {
-                    space: c.space.clone(),
-                    project: c.project.clone(),
-                    name: c.name.clone(),
-                }).collect();
+                let rows = mapper::change_rows(&changes);
                 println!("{}", Table::new(rows).with(Style::sharp()));
             }
         }

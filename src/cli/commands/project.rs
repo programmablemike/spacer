@@ -1,20 +1,10 @@
 use anyhow::Result;
 use clap::{Args, Subcommand};
 use std::path::PathBuf;
-use tabled::{Table, Tabled};
+use tabled::Table;
 use tabled::settings::Style;
 
-#[derive(Tabled)]
-struct ProjectRow {
-    #[tabled(rename = " ")]
-    active: char,
-    #[tabled(rename = "SPACE")]
-    space: String,
-    #[tabled(rename = "NAME")]
-    name: String,
-    #[tabled(rename = "PATH")]
-    path: String,
-}
+use crate::cli::mapper;
 
 #[derive(Args)]
 pub struct ProjectArgs {
@@ -69,14 +59,14 @@ pub enum ProjectCommands {
     },
 }
 
-fn resolve_space(flag: Option<String>, ws: &spacer_core::Workspace) -> Result<String> {
+fn resolve_space(flag: Option<String>, ws: &spacer_core::Workspace<impl spacer_core::Backend>) -> Result<String> {
     flag.or_else(|| ws.active_space())
         .ok_or_else(|| anyhow::anyhow!(
             "no space specified — use --space or set one with `spacer space use <name>`"
         ))
 }
 
-fn resolve_project(flag: Option<String>, ws: &spacer_core::Workspace) -> Result<String> {
+fn resolve_project(flag: Option<String>, ws: &spacer_core::Workspace<impl spacer_core::Backend>) -> Result<String> {
     flag.or_else(|| ws.active_project())
         .ok_or_else(|| anyhow::anyhow!(
             "no project specified — pass a name or set one with `spacer project use <name>`"
@@ -101,12 +91,7 @@ pub fn run(args: ProjectArgs) -> Result<()> {
             if projects.is_empty() {
                 println!("No projects found.");
             } else {
-                let rows: Vec<ProjectRow> = projects.iter().map(|p| ProjectRow {
-                    active: if active.as_deref() == Some(p.name.as_str()) { '*' } else { ' ' },
-                    space: p.space.clone(),
-                    name: p.name.clone(),
-                    path: p.path.display().to_string(),
-                }).collect();
+                let rows = mapper::project_rows(&projects, active.as_deref());
                 println!("{}", Table::new(rows).with(Style::sharp()));
             }
         }

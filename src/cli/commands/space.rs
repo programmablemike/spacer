@@ -1,18 +1,10 @@
 use anyhow::Result;
 use clap::{Args, Subcommand};
 use std::path::PathBuf;
-use tabled::{Table, Tabled};
+use tabled::{Table};
 use tabled::settings::Style;
 
-#[derive(Tabled)]
-struct SpaceRow {
-    #[tabled(rename = " ")]
-    active: char,
-    #[tabled(rename = "NAME")]
-    name: String,
-    #[tabled(rename = "PATH")]
-    path: String,
-}
+use crate::cli::mapper;
 
 #[derive(Args)]
 pub struct SpaceArgs {
@@ -62,16 +54,12 @@ pub fn run(args: SpaceArgs) -> Result<()> {
             println!("Created space '{}'", name);
         }
         SpaceCommands::List => {
-            let spaces = ws.spaces();
             let active = ws.active_space();
+            let spaces = ws.spaces();
             if spaces.is_empty() {
                 println!("No spaces found. Create one with `spacer space create <name>`.");
             } else {
-                let rows: Vec<SpaceRow> = spaces.iter().map(|s| SpaceRow {
-                    active: if active.as_deref() == Some(s.name.as_str()) { '*' } else { ' ' },
-                    name: s.name.clone(),
-                    path: s.path.display().to_string(),
-                }).collect();
+                let rows = mapper::space_rows(spaces, active.as_deref());
                 println!("{}", Table::new(rows).with(Style::sharp()));
             }
         }
