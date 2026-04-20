@@ -1,5 +1,17 @@
 use anyhow::Result;
 use clap::{Args, Subcommand};
+use tabled::{Table, Tabled};
+use tabled::settings::Style;
+
+#[derive(Tabled)]
+struct ChangeRow {
+    #[tabled(rename = "SPACE")]
+    space: String,
+    #[tabled(rename = "PROJECT")]
+    project: String,
+    #[tabled(rename = "NAME")]
+    name: String,
+}
 
 #[derive(Args)]
 pub struct ChangeArgs {
@@ -65,9 +77,12 @@ pub fn run(args: ChangeArgs) -> Result<()> {
             if changes.is_empty() {
                 println!("No changes found.");
             } else {
-                for c in changes {
-                    println!("{:20} {:20} {}", c.space, c.project, c.name);
-                }
+                let rows: Vec<ChangeRow> = changes.iter().map(|c| ChangeRow {
+                    space: c.space.clone(),
+                    project: c.project.clone(),
+                    name: c.name.clone(),
+                }).collect();
+                println!("{}", Table::new(rows).with(Style::sharp()));
             }
         }
         ChangeCommands::Finish { name, project, space } => {

@@ -8,6 +8,7 @@ written in Rust to be blazing fast.
 ## Table of Contents
 
 - [Description](#description)
+- [Setup](#setup)
 - [Use Cases](#use-cases)
   - [Initializing Spacer](#initializing-spacer)
   - [Creating a new project](#creating-a-new-project)
@@ -31,6 +32,40 @@ The CLI allows users to perform various operations on their projects, such as
 creating new projects, switching between projects, and managing changes. The TUI
 provides a visual interface for users to navigate through their projects and
 changes, making it easier to manage multiple projects simultaneously.
+
+## Setup
+
+After installing the `spacer` binary, add the shell integration to your shell's
+rc file so that `spacer space go` can change your working directory:
+
+**zsh** — add to `~/.zshrc`:
+
+```sh
+eval "$(spacer shell)"
+```
+
+**bash** — add to `~/.bashrc`:
+
+```sh
+eval "$(spacer shell bash)"
+```
+
+**sh** — add to `~/.profile`:
+
+```sh
+eval "$(spacer shell sh)"
+```
+
+Then restart your shell or source the rc file:
+
+```sh
+source ~/.zshrc   # or ~/.bashrc, ~/.profile
+```
+
+This is required for the `spacer space go` and `spacer project go` commands to
+work, which change the current working directory to the selected space or
+project. Without this shell integration, these commands will not be able
+to change the directory in the parent shell.
 
 ## Use Cases
 

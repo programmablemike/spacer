@@ -19,4 +19,6 @@ pub enum Commands {
     Project(commands::project::ProjectArgs),
     /// Manage changes
     Change(commands::change::ChangeArgs),
+    /// Print shell integration code
+    Shell(commands::shell::ShellArgs),
 }

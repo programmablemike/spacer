@@ -14,6 +14,7 @@ fn main() -> Result<()> {
         Some(Commands::Space(args)) => cli::commands::space::run(args),
         Some(Commands::Project(args)) => cli::commands::project::run(args),
         Some(Commands::Change(args)) => cli::commands::change::run(args),
+        Some(Commands::Shell(args)) => cli::commands::shell::run(args),
         None => tui::run(),
     }
 }

@@ -1,6 +1,18 @@
 use anyhow::Result;
 use clap::{Args, Subcommand};
 use std::path::PathBuf;
+use tabled::{Table, Tabled};
+use tabled::settings::Style;
+
+#[derive(Tabled)]
+struct SpaceRow {
+    #[tabled(rename = " ")]
+    active: char,
+    #[tabled(rename = "NAME")]
+    name: String,
+    #[tabled(rename = "PATH")]
+    path: String,
+}
 
 #[derive(Args)]
 pub struct SpaceArgs {
@@ -30,6 +42,13 @@ pub enum SpaceCommands {
         /// Name of the space to activate
         name: String,
     },
+    /// Show the currently active space
+    Current,
+    /// Print the path of a space (use with a shell function to cd into it)
+    Go {
+        /// Name of the space (defaults to active space)
+        name: Option<String>,
+    },
 }
 
 pub fn run(args: SpaceArgs) -> Result<()> {
@@ -48,10 +67,12 @@ pub fn run(args: SpaceArgs) -> Result<()> {
             if spaces.is_empty() {
                 println!("No spaces found. Create one with `spacer space create <name>`.");
             } else {
-                for space in spaces {
-                    let marker = if active.as_deref() == Some(space.name.as_str()) { '*' } else { ' ' };
-                    println!("{} {:20} {}", marker, space.name, space.path.display());
-                }
+                let rows: Vec<SpaceRow> = spaces.iter().map(|s| SpaceRow {
+                    active: if active.as_deref() == Some(s.name.as_str()) { '*' } else { ' ' },
+                    name: s.name.clone(),
+                    path: s.path.display().to_string(),
+                }).collect();
+                println!("{}", Table::new(rows).with(Style::sharp()));
             }
         }
         SpaceCommands::Delete { name } => {
@@ -63,6 +84,24 @@ pub fn run(args: SpaceArgs) -> Result<()> {
             ws.set_active_space(&name)?;
             ws.save()?;
             println!("Now using space '{}'", name);
+        }
+        SpaceCommands::Current => {
+            match ws.active_space() {
+                Some(name) => println!("{}", name),
+                None => println!("No active space. Set one with `spacer space use <name>`."),
+            }
+        }
+        SpaceCommands::Go { name } => {
+            let name = name
+                .or_else(|| ws.active_space())
+                .ok_or_else(|| anyhow::anyhow!(
+                    "no space specified — pass a name or set one with `spacer space use <name>`"
+                ))?;
+            let space = ws.spaces()
+                .iter()
+                .find(|s| s.name == name)
+                .ok_or_else(|| anyhow::anyhow!("space '{}' not found", name))?;
+            print!("{}", space.path.display());
         }
     }
 
