@@ -11,6 +11,7 @@ you need below.
 | Learn through a guided exercise | [Your first workspace](tutorials/first-workspace.md) |
 | Use the graphical app | [Desktop guide](how-to/desktop.md) |
 | Install Spacer | [Installation](how-to/install.md) |
+| Manage Spacer with Nix | [Nix, Home Manager, and nix-darwin](how-to/nix.md) |
 | Navigate from your shell | [Set up navigation](how-to/shell-navigation.md) |
 | Register a repository you already have | [Add an existing project](how-to/existing-project.md) |
 | Recover after an error or upgrade | [Workspace recovery](how-to/recover-workspace.md) |

@@ -73,7 +73,12 @@ With Nix and flakes enabled, run from the repository checkout:
 ```sh
 nix build
 ./result/bin/spacer --help
+nix build .#desktop --out-link result-desktop
 ```
+
+The `cli` and `desktop` packages include their Git runtime dependency. See
+[Nix installation](nix.md) for Home Manager, nix-darwin, application registration,
+and version pinning. The default package remains the CLI.
 
 For development, `nix develop` or the [Flox environment](../../.flox/env/manifest.toml)
 provides tooling. See [release verification](verify-release.md) for checks.

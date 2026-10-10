@@ -27,8 +27,10 @@ npm run tauri -- dev
 
 `npm run dev` alone serves the frontend without the native workspace bridge; use
 `tauri dev` for a working application. Cargo and rustc must both be on PATH.
-The repository's Nix environment is for the CLI; native desktop bundling uses
-Tauri's platform tooling.
+Nix users can build the desktop with `nix build .#desktop` without installing
+these development tools separately. See [Nix installation](nix.md) for declarative
+installation and application integration. Conventional installers use Tauri's
+platform tooling.
 
 ## Choose a workspace
 

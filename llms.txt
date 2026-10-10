@@ -17,6 +17,7 @@ Workspace discovery uses SPACER_ROOT or the nearest ancestor workspace.
 - [Desktop app](docs/how-to/desktop.md): Graphical lifecycle, explicit workspace selection, native builds, and verification.
 
 - [Installation](docs/how-to/install.md): Verified archives, Cargo, Nix, and prerequisites.
+- [Nix installation](docs/how-to/nix.md): Source-built CLI/desktop packages, Home Manager, nix-darwin, and updates.
 - [Shell navigation](docs/how-to/shell-navigation.md): Wrappers, managed sessions, and Windows navigation.
 - [Register an existing project](docs/how-to/existing-project.md): Register a primary repository without moving it.
 - [Recovery](docs/how-to/recover-workspace.md): Legacy compatibility, conflicts, and partial failures.

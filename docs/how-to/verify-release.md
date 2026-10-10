@@ -48,3 +48,15 @@ From `desktop/`, run `npm ci`, `npm run format:check`, `npm run build`,
 `cargo test --manifest-path src-tauri/Cargo.toml --locked` and the analogous
 formatting/Clippy commands. See [desktop setup](desktop.md) for system prerequisites
 and the installer build command.
+
+## Nix packages
+
+The Nix workflow runs `nix flake check` on ARM64 and x86-64 macOS/Linux. It builds
+the CLI, frontend, and desktop from source, runs Rust tests, and exercises the
+packaged CLI and a test-only native webview. The webview starts with an empty
+PATH to verify that the Nix wrapper supplies Git. Package layout checks cover
+the macOS application bundle and Linux desktop entry. Version-tag publication
+also depends on this workflow.
+
+See [Nix installation](nix.md) for package outputs and Home Manager/nix-darwin
+integration. Nix store outputs are separate from standalone release installers.
