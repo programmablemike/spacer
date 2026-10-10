@@ -1,5 +1,7 @@
 # Spacer
 
+[Documentation](docs/README.md) · [Documentation index for LLMs](llms.txt)
+
 ![Spacer logo](logo.svg)
 
 Spacer is a command-line tool and TUI for managing multiple code projects. It's
