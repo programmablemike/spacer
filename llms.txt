@@ -3,7 +3,7 @@
 > A Rust CLI and read-only terminal browser for organizing local development projects into spaces.
 
 The current application tracks directories and change records in JSON. Git
-repository/worktree operations exist in the core library but are not integrated
+repository/worktree operations exist through the shared application services and data adapters but are not integrated
 into the CLI or TUI. Starting or finishing a change only updates tracking.
 Workspace resolution uses SPACER_ROOT or the current directory, without ancestor
 search. The documentation describes the committed application behavior.
@@ -27,9 +27,11 @@ search. The documentation describes the committed application behavior.
 - [CLI](docs/reference/cli.md): Commands, arguments, effects, and TUI keys.
 - [Configuration](docs/reference/configuration.md): Environment precedence, JSON state, and persistence limitations.
 
+- [Rust API](docs/reference/rust-api.md): Workspace construction, ports, use cases, errors, and library migration.
+
 ## Explanation
 
-- [Workspaces and adapters](docs/explanation/architecture.md): Domain hierarchy, code boundaries, and Git versus metadata behavior.
+- [Hexagonal architecture](docs/explanation/architecture.md): Presentation, domain/application services, ports, data adapters, and composition.
 
 ## Optional
 

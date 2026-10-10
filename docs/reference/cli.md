@@ -7,13 +7,13 @@ uppercase words are placeholders. `spacer --help` and each subcommand's `--help`
 provide built-in help. `spacer --version` prints the package version.
 
 With no command, Spacer opens the read-only TUI. All commands below use the
-JSON configuration backend, not the Git adapter.
+shared workspace service with JSON persistence. Tracking commands do not invoke Git.
 
 ## Workspace
 
 | Command | Effect |
 | --- | --- |
-| `workspace init` | Write empty configuration at the root if `.spacer` does not exist. If it exists, report already initialized without validating its contents. |
+| `workspace init` | Write empty configuration at the root if `.spacer` does not exist. If it exists, report already initialized after loading configuration; malformed configuration is an error. |
 
 ## Spaces
 

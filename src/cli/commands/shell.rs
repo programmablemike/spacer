@@ -9,11 +9,12 @@ pub struct ShellArgs {
 }
 
 pub fn run(args: ShellArgs) -> Result<()> {
-    let shell = args.shell
+    let shell = args
+        .shell
         .or_else(|| {
-            std::env::var("SHELL").ok().and_then(|s| {
-                s.rsplit('/').next().map(|s| s.to_string())
-            })
+            std::env::var("SHELL")
+                .ok()
+                .and_then(|s| s.rsplit('/').next().map(|s| s.to_string()))
         })
         .unwrap_or_else(|| "sh".to_string());
 

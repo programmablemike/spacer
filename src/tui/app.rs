@@ -1,4 +1,4 @@
-use spacer_core::Config;
+use spacer_core::WorkspaceSnapshot;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Tab {
@@ -28,14 +28,18 @@ impl Tab {
 }
 
 pub struct App {
-    pub config: Config,
+    pub snapshot: WorkspaceSnapshot,
     pub active_tab: Tab,
     pub selected: usize,
 }
 
 impl App {
-    pub fn new(config: Config) -> Self {
-        Self { config, active_tab: Tab::Spaces, selected: 0 }
+    pub fn new(snapshot: WorkspaceSnapshot) -> Self {
+        Self {
+            snapshot,
+            active_tab: Tab::Spaces,
+            selected: 0,
+        }
     }
 
     pub fn next_tab(&mut self) {
@@ -59,9 +63,9 @@ impl App {
 
     fn list_len(&self) -> usize {
         match self.active_tab {
-            Tab::Spaces => self.config.spaces.len(),
-            Tab::Projects => self.config.projects.len(),
-            Tab::Changes => self.config.changes.len(),
+            Tab::Spaces => self.snapshot.spaces.len(),
+            Tab::Projects => self.snapshot.projects.len(),
+            Tab::Changes => self.snapshot.changes.len(),
         }
     }
 }

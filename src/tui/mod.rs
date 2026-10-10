@@ -12,7 +12,7 @@ use std::io;
 
 use app::App;
 
-pub fn run() -> Result<()> {
+pub fn run(snapshot: spacer_core::WorkspaceSnapshot) -> Result<()> {
     enable_raw_mode()?;
     let mut stdout = io::stdout();
     execute!(stdout, EnterAlternateScreen, EnableMouseCapture)?;
@@ -20,19 +20,24 @@ pub fn run() -> Result<()> {
     let backend = CrosstermBackend::new(stdout);
     let mut terminal = Terminal::new(backend)?;
 
-    let result = run_app(&mut terminal);
+    let result = run_app(&mut terminal, snapshot);
 
     disable_raw_mode()?;
-    execute!(terminal.backend_mut(), LeaveAlternateScreen, DisableMouseCapture)?;
+    execute!(
+        terminal.backend_mut(),
+        LeaveAlternateScreen,
+        DisableMouseCapture
+    )?;
     terminal.show_cursor()?;
 
     result
 }
 
-fn run_app<B: ratatui::backend::Backend>(terminal: &mut Terminal<B>) -> Result<()> {
-    let root = spacer_core::default_root()?;
-    let ws = spacer_core::Workspace::open(&root)?;
-    let mut app = App::new(ws.config().clone());
+fn run_app<B: ratatui::backend::Backend>(
+    terminal: &mut Terminal<B>,
+    snapshot: spacer_core::WorkspaceSnapshot,
+) -> Result<()> {
+    let mut app = App::new(snapshot);
 
     loop {
         terminal.draw(|frame| ui::draw(frame, &app))?;

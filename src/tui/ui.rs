@@ -1,9 +1,9 @@
 use ratatui::{
-    Frame,
     layout::{Constraint, Direction, Layout},
     style::{Color, Modifier, Style},
     text::{Line, Span},
     widgets::{Block, Borders, List, ListItem, ListState, Paragraph, Tabs},
+    Frame,
 };
 
 use super::app::{App, Tab};
@@ -25,11 +25,18 @@ pub fn draw(frame: &mut Frame, app: &App) {
         .iter()
         .map(|t| Line::from(Span::raw(t.title())))
         .collect();
-    let selected_tab = Tab::ALL.iter().position(|t| *t == app.active_tab).unwrap_or(0);
+    let selected_tab = Tab::ALL
+        .iter()
+        .position(|t| *t == app.active_tab)
+        .unwrap_or(0);
     let tabs = Tabs::new(tab_titles)
         .block(Block::default().borders(Borders::ALL).title(" Spacer "))
         .select(selected_tab)
-        .highlight_style(Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD));
+        .highlight_style(
+            Style::default()
+                .fg(Color::Yellow)
+                .add_modifier(Modifier::BOLD),
+        );
     frame.render_widget(tabs, chunks[0]);
 
     // Content
@@ -47,7 +54,7 @@ pub fn draw(frame: &mut Frame, app: &App) {
 
 fn render_spaces(frame: &mut Frame, app: &App, area: ratatui::layout::Rect) {
     let items: Vec<ListItem> = app
-        .config
+        .snapshot
         .spaces
         .iter()
         .map(|s| ListItem::new(format!("{:20} {}", s.name, s.path.display())))
@@ -60,7 +67,11 @@ fn render_spaces(frame: &mut Frame, app: &App, area: ratatui::layout::Rect) {
 
     let list = List::new(items)
         .block(Block::default().borders(Borders::ALL).title(" Spaces "))
-        .highlight_style(Style::default().fg(Color::Cyan).add_modifier(Modifier::BOLD))
+        .highlight_style(
+            Style::default()
+                .fg(Color::Cyan)
+                .add_modifier(Modifier::BOLD),
+        )
         .highlight_symbol("> ");
 
     frame.render_stateful_widget(list, area, &mut state);
@@ -68,7 +79,7 @@ fn render_spaces(frame: &mut Frame, app: &App, area: ratatui::layout::Rect) {
 
 fn render_projects(frame: &mut Frame, app: &App, area: ratatui::layout::Rect) {
     let items: Vec<ListItem> = app
-        .config
+        .snapshot
         .projects
         .iter()
         .map(|p| ListItem::new(format!("{:20} {:20} {}", p.space, p.name, p.path.display())))
@@ -81,7 +92,11 @@ fn render_projects(frame: &mut Frame, app: &App, area: ratatui::layout::Rect) {
 
     let list = List::new(items)
         .block(Block::default().borders(Borders::ALL).title(" Projects "))
-        .highlight_style(Style::default().fg(Color::Cyan).add_modifier(Modifier::BOLD))
+        .highlight_style(
+            Style::default()
+                .fg(Color::Cyan)
+                .add_modifier(Modifier::BOLD),
+        )
         .highlight_symbol("> ");
 
     frame.render_stateful_widget(list, area, &mut state);
@@ -89,7 +104,7 @@ fn render_projects(frame: &mut Frame, app: &App, area: ratatui::layout::Rect) {
 
 fn render_changes(frame: &mut Frame, app: &App, area: ratatui::layout::Rect) {
     let items: Vec<ListItem> = app
-        .config
+        .snapshot
         .changes
         .iter()
         .map(|c| ListItem::new(format!("{:20} {:20} {}", c.space, c.project, c.name)))
@@ -102,7 +117,11 @@ fn render_changes(frame: &mut Frame, app: &App, area: ratatui::layout::Rect) {
 
     let list = List::new(items)
         .block(Block::default().borders(Borders::ALL).title(" Changes "))
-        .highlight_style(Style::default().fg(Color::Cyan).add_modifier(Modifier::BOLD))
+        .highlight_style(
+            Style::default()
+                .fg(Color::Cyan)
+                .add_modifier(Modifier::BOLD),
+        )
         .highlight_symbol("> ");
 
     frame.render_stateful_widget(list, area, &mut state);

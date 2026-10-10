@@ -18,6 +18,7 @@
         commonArgs = {
           inherit src;
           strictDeps = true;
+          nativeCheckInputs = [ pkgs.git ];
           # libiconv is required by Rust crates on Darwin
           buildInputs = pkgs.lib.optionals pkgs.stdenv.isDarwin [
             pkgs.libiconv
@@ -39,13 +40,14 @@
 
           spacer-clippy = craneLib.cargoClippy (commonArgs // {
             inherit cargoArtifacts;
-            cargoClippyExtraArgs = "--all-targets -- --deny warnings";
+            cargoClippyExtraArgs = "--workspace --all-targets -- --deny warnings";
           });
 
           spacer-fmt = craneLib.cargoFmt { inherit src; };
 
           spacer-test = craneLib.cargoTest (commonArgs // {
             inherit cargoArtifacts;
+            cargoTestExtraArgs = "--workspace";
           });
         };
 

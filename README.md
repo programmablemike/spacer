@@ -12,7 +12,7 @@ workspace.
 
 **Status: early development.** The CLI currently creates directories and tracks
 spaces, projects, and changes in JSON. Git repository and worktree operations
-exist in the core library but are not connected to the CLI or TUI yet.
+exist in the shared Rust services and adapters but are not exposed by the CLI or TUI yet.
 
 ## Install from source
 
@@ -24,7 +24,7 @@ spacer --help
 ```
 
 Ensure Cargo's installation directory (usually `~/.cargo/bin`) is on your `PATH`.
-Git is needed for the core library's Git adapter and its integration tests.
+Git is needed for the data layer's Git adapter and its integration tests.
 
 With Nix and flakes enabled, you can build and run from the checkout instead:
 
@@ -167,8 +167,11 @@ For command details, run `spacer --help` or a subcommand's `--help`.
 
 ## Development
 
-The Rust workspace contains the CLI/TUI in `src/` and domain types, storage, and
-Git adapters in `spacer-core/`. Nix and Flox development configurations are
+The Rust workspace separates presentation (`src/cli/`, `src/tui/`), the domain
+model and application services (`spacer-core/`), and data adapters (`spacer-data/`).
+The executable composition root connects them. See the
+[hexagonal architecture](docs/explanation/architecture.md) and
+[Rust API reference](docs/reference/rust-api.md). Nix and Flox development configurations are
 included in [flake.nix](flake.nix) and [.flox/env/manifest.toml](.flox/env/manifest.toml).
 
 With Rust, rustfmt, Clippy, and Git available:
