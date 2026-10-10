@@ -89,6 +89,6 @@ use the same canonical directory. Navigation paths are not yet checked for exist
 current constraints, not guarantees of safe arbitrary filesystem operations.
 
 The Git adapter performs Git operations only; it does not own registration or
-active context. The former Git backend's `.spacer/state.json` is not read or
-migrated. See [architecture](../explanation/architecture.md) and the
+active context. The former Git backend's `.spacer/state.json` requires explicit reconciliation before loading. See
+[recovery](../how-to/recover-workspace.md). See [architecture](../explanation/architecture.md) and the
 [Rust API migration reference](rust-api.md).

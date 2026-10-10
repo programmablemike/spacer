@@ -74,12 +74,12 @@ fn loads_existing_config_with_missing_optional_context() {
     std::fs::create_dir(tmp.path().join(".spacer")).unwrap();
     std::fs::write(
         tmp.path().join(".spacer/config.json"),
-        r#"{"spaces":[{"name":"legacy","path":"relative"}],"projects":[],"changes":[]}"#,
+        serde_json::json!({"spaces":[{"name":"legacy","path":tmp.path()}],"projects":[],"changes":[]}).to_string(),
     )
     .unwrap();
     let ws = workspace(tmp.path());
     assert_eq!(ws.spaces()[0].name, "legacy");
-    assert_eq!(ws.spaces()[0].path, Path::new("relative"));
+    assert_eq!(ws.spaces()[0].path, tmp.path());
     assert!(ws.active_space().is_none());
 }
 
@@ -292,4 +292,55 @@ fn symlink_aliases_and_implicit_escape_are_rejected() {
     assert!(ws
         .create_project("external", "alpha", Some(outside.path().to_owned()))
         .is_ok());
+}
+
+#[test]
+fn legacy_upgrade_preserves_records_context_and_custom_paths() {
+    let tmp = tempfile::tempdir().unwrap();
+    let mut ws = workspace(tmp.path());
+    ws.create_space("alpha", None).unwrap();
+    ws.create_project("web", "alpha", Some(tmp.path().join("custom")))
+        .unwrap();
+    ws.set_active_project("web", "alpha").unwrap();
+    ws.start_change("legacy-tracking", "web", "alpha").unwrap();
+    let path = tmp.path().join(".spacer/config.json");
+    let mut data: serde_json::Value =
+        serde_json::from_slice(&std::fs::read(&path).unwrap()).unwrap();
+    data.as_object_mut().unwrap().remove("schema_version");
+    std::fs::write(&path, serde_json::to_vec(&data).unwrap()).unwrap();
+    let before = std::fs::read(&path).unwrap();
+    let mut reopened = workspace(tmp.path());
+    assert_eq!(reopened.snapshot(), ws.snapshot());
+    assert_eq!(std::fs::read(&path).unwrap(), before);
+    reopened.set_active_space("alpha").unwrap();
+    assert_eq!(workspace(tmp.path()).snapshot(), ws.snapshot());
+    let saved: serde_json::Value = serde_json::from_slice(&std::fs::read(&path).unwrap()).unwrap();
+    assert_eq!(saved["schema_version"], 1);
+}
+
+#[test]
+fn ambiguous_legacy_formats_are_rejected_without_writes() {
+    let tmp = tempfile::tempdir().unwrap();
+    let metadata = tmp.path().join(".spacer");
+    std::fs::create_dir(&metadata).unwrap();
+    let path = metadata.join("config.json");
+    let legacy = r#"{"spaces":[{"name":"old","path":"relative"}],"projects":[],"changes":[]}"#;
+    std::fs::write(&path, legacy).unwrap();
+    assert!(JsonRegistry::new(tmp.path())
+        .load()
+        .unwrap_err()
+        .to_string()
+        .contains("relative legacy"));
+    assert_eq!(std::fs::read_to_string(&path).unwrap(), legacy);
+    std::fs::write(metadata.join("state.json"), "legacy").unwrap();
+    assert!(JsonRegistry::new(tmp.path())
+        .load()
+        .unwrap_err()
+        .to_string()
+        .contains("state.json"));
+    assert_eq!(std::fs::read_to_string(&path).unwrap(), legacy);
+    assert_eq!(
+        std::fs::read_to_string(metadata.join("state.json")).unwrap(),
+        "legacy"
+    );
 }

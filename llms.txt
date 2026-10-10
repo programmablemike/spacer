@@ -37,3 +37,5 @@ search. The documentation describes the committed application behavior.
 
 - [Project overview](README.md): Repository entry point.
 - [License](LICENSE): MIT license terms.
+
+- [Recovery](docs/how-to/recover-workspace.md): Legacy compatibility and failed mutations.
