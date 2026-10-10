@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128" role="img" aria-labelledby="title desc">
+  <title id="title">Spacer icon</title>
+  <desc id="desc">A mint vector spaceship approaching an angular gray asteroid on a dark background.</desc>
+  <rect width="128" height="128" rx="24" fill="#111923"/>
+  <g fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <!-- Angular rock and ship recall early vector arcade games. -->
+    <path d="M87 24 105 32 109 49 99 62 82 59 73 45 77 31Z"
+          stroke="#8494a7" stroke-width="2.5"/>
+    <path d="M65 51 37 99 39 77 18 70Z"
+          stroke="#70e0cf" stroke-width="3"/>
+    <path d="m29 87-8 9" stroke="#70e0cf" stroke-width="2.5"/>
+  </g>
+</svg>
