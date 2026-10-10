@@ -39,3 +39,5 @@ search. The documentation describes the committed application behavior.
 - [License](LICENSE): MIT license terms.
 
 - [Recovery](docs/how-to/recover-workspace.md): Legacy compatibility and failed mutations.
+
+- [Release verification](docs/how-to/verify-release.md): CI, packaging, and smoke tests.
