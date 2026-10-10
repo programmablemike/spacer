@@ -10,9 +10,9 @@ common = '''
 
 [build.spacer]
 description = "A CLI and TUI tool for managing multiple code projects"
-version = "0.1.0"
+version = "0.0.1"
 command = """
   mkdir -p $out/bin
-  cargo build --release
+  cargo build --release --locked
   cp target/release/spacer $out/bin/spacer
 """

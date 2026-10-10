@@ -1,35 +1,33 @@
 # Spacer documentation
 
-Spacer organizes local development projects into spaces and provides a CLI and
-read-only terminal browser. The current application tracks directories and
-changes in JSON; it does not yet create Git repositories or worktrees.
+Spacer organizes local Git projects into spaces, manages linked worktrees, and
+provides shell navigation and a read-only terminal browser.
 
 The documentation follows [Diátaxis](https://diataxis.fr/): choose the kind of help
-you need below. Commands describe the implementation in this repository.
+you need below.
 
 | Need | Start here |
 | --- | --- |
 | Learn through a guided exercise | [Your first workspace](tutorials/first-workspace.md) |
-| Install Spacer | [Install from source](how-to/install.md) |
-| Navigate projects from your shell | [Set up navigation](how-to/shell-navigation.md) |
-| Track a directory that already exists | [Add an existing project](how-to/existing-project.md) |
+| Install Spacer | [Installation](how-to/install.md) |
+| Navigate from your shell | [Set up navigation](how-to/shell-navigation.md) |
+| Register a repository you already have | [Add an existing project](how-to/existing-project.md) |
+| Recover after an error or upgrade | [Workspace recovery](how-to/recover-workspace.md) |
+| Verify a build or release | [Release verification](how-to/verify-release.md) |
 | Look up commands | [CLI reference](reference/cli.md) |
 | Look up state, defaults, and constraints | [Configuration reference](reference/configuration.md) |
-| Look up the Rust API and migration | [Rust API](reference/rust-api.md) |
+| Integrate with the Rust libraries | [Rust API and migration](reference/rust-api.md) |
 | Understand the design | [Hexagonal architecture](explanation/architecture.md) |
 
-For a compact machine-readable documentation index, see [llms.txt](../llms.txt).
+See [release notes](../RELEASE_NOTES.md) for supported platforms and alpha limits,
+and [llms.txt](../llms.txt) for a compact documentation index.
 
 ## Contributing documentation
 
-Tutorials guide a learner through a complete, repeatable exercise. How-to guides
-solve a specific task and assume basic familiarity. Reference describes precise
-behavior. Explanation discusses concepts and design choices.
+Tutorials guide a learner through a complete exercise. How-to guides solve a
+specific task. Reference describes precise behavior. Explanation discusses
+concepts and design choices.
 
-Keep examples aligned with implemented commands and describe observable outcomes.
-Use relative links between pages, link back to this index, and update `llms.txt`
-when adding or moving documentation. Verify examples in an isolated workspace.
-
-- [Recover an existing workspace](how-to/recover-workspace.md)
-
-- [Verify a release](how-to/verify-release.md)
+Keep examples aligned with implemented commands. Use relative links between
+pages, link back to this index, and update `llms.txt` when moving or adding pages.
+Verify examples in an isolated workspace.

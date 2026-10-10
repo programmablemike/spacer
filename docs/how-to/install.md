@@ -1,20 +1,70 @@
-# Install from source
+# Install Spacer
 
-[Documentation](../README.md) / How-to guide
+[Documentation](../README.md) / How-to
 
-## With Cargo
+Spacer requires Git on PATH for repository and worktree operations. Use a recent
+Git 2.x release; the release workflow records the exact tested version. Configure
+your own Git commit identity before the tutorial's first commit. Spacer neither
+configures your identity nor makes commits for you.
 
-Install a Rust toolchain that provides Cargo, then run these commands from a
-checkout of the repository:
+## From a release archive
+
+Download the archive and matching `.sha256` file from the
+[0.0.1 alpha release](https://github.com/programmablemike/spacer/releases/tag/v0.0.1).
+Choose the target for your platform:
+
+| Platform | Target | Archive |
+| --- | --- | --- |
+| macOS Apple Silicon | `aarch64-apple-darwin` | `.tar.gz` |
+| macOS Intel | `x86_64-apple-darwin` | `.tar.gz` |
+| Linux ARM64, glibc | `aarch64-unknown-linux-gnu` | `.tar.gz` |
+| Linux x86-64, glibc | `x86_64-unknown-linux-gnu` | `.tar.gz` |
+| Windows x86-64 | `x86_64-pc-windows-msvc` | `.zip` |
+
+The native release tests use macOS 15, Ubuntu 24.04, and GitHub's Windows runner.
+Older OS versions, musl Linux, and other architectures are unverified.
+
+On macOS, for example, verify and extract the Apple Silicon archive from your
+download directory:
+
+```sh
+shasum -a 256 -c spacer-0.0.1-aarch64-apple-darwin.tar.gz.sha256
+tar -xzf spacer-0.0.1-aarch64-apple-darwin.tar.gz
+mkdir -p "$HOME/.local/bin"
+cp spacer-0.0.1-aarch64-apple-darwin/spacer "$HOME/.local/bin/spacer"
+export PATH="$HOME/.local/bin:$PATH"
+spacer --version
+```
+
+On Linux, use your target filename and `sha256sum -c` for verification. Add the
+PATH export to your shell startup file to keep it in future sessions.
+
+On Windows, compare the hash and extract in PowerShell:
+
+```powershell
+$archive = 'spacer-0.0.1-x86_64-pc-windows-msvc.zip'
+$expected = ((Get-Content "$archive.sha256") -split '\s+')[0]
+if ((Get-FileHash $archive -Algorithm SHA256).Hash -ne $expected) { throw 'Checksum mismatch' }
+Expand-Archive $archive -DestinationPath .
+.\spacer-0.0.1-x86_64-pc-windows-msvc\spacer.exe --version
+```
+
+Place `spacer.exe` in a directory on your user PATH. Release binaries are not
+code-signed or notarized; checksums detect download corruption and do not provide
+an independent authenticity signature.
+
+## From source with Cargo
+
+Use the Rust 1.94.0 toolchain pinned by `rust-toolchain.toml`, with your platform's
+linker/build tools. From a checkout of tag `v0.0.1`:
 
 ```sh
 cargo install --path . --locked
 spacer --help
 ```
 
-Add Cargo's binary directory (usually `~/.cargo/bin`) to PATH if your shell cannot
-find `spacer`. This installs the CLI and TUI as one binary. The TUI requires an
-interactive terminal. Git is needed to run the library's Git integration tests.
+Add Cargo's binary directory (usually `~/.cargo/bin`) to PATH. The CLI and TUI
+share one executable. The TUI requires an interactive terminal.
 
 ## With Nix
 
@@ -25,19 +75,6 @@ nix build
 ./result/bin/spacer --help
 ```
 
-The built executable is available through `result/bin/spacer`.
-
-## Build for development
-
-With Rust and Git available, run:
-
-```sh
-cargo build --locked
-cargo test --workspace --locked
-```
-
-Run the development binary as `./target/debug/spacer`. The repository also
-provides [Nix](../../flake.nix) and [Flox](../../.flox/env/manifest.toml)
-configurations. Formatting and lint checks additionally require rustfmt and Clippy.
-
+For development, `nix develop` or the [Flox environment](../../.flox/env/manifest.toml)
+provides tooling. See [release verification](verify-release.md) for checks.
 Continue with [your first workspace](../tutorials/first-workspace.md).

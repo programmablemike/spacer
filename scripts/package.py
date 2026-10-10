@@ -19,7 +19,7 @@ with tempfile.TemporaryDirectory() as directory:
     staging = pathlib.Path(directory) / name
     staging.mkdir()
     shutil.copy2(binary, staging / binary.name)
-    for filename in ("LICENSE", "README.md"):
+    for filename in ("LICENSE", "README.md", "RELEASE_NOTES.md", "llms.txt", "logo.svg", "logo-icon.svg"):
         shutil.copy2(filename, staging / filename)
     shutil.copytree("docs", staging / "docs")
     if target.endswith("msvc"):

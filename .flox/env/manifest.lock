@@ -13,8 +13,8 @@
     "options": {},
     "build": {
       "spacer": {
-        "command": "  mkdir -p $out/bin\n  cargo build --release\n  cp target/release/spacer $out/bin/spacer\n",
-        "version": "0.1.0",
+        "command": "  mkdir -p $out/bin\n  cargo build --release --locked\n  cp target/release/spacer $out/bin/spacer\n",
+        "version": "0.0.1",
         "description": "A CLI and TUI tool for managing multiple code projects"
       }
     }

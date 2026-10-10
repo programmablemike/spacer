@@ -1,43 +1,38 @@
 # Spacer
 
-> A Rust CLI and read-only terminal browser for organizing local development projects into spaces.
+> A Rust CLI and read-only terminal browser for organizing local Git projects into spaces and linked worktrees.
 
-The current application tracks directories and change records in JSON. Git
-repository/worktree operations exist through the shared application services and data adapters but are not integrated
-into the CLI or TUI. Starting or finishing a change only updates tracking.
-Workspace resolution uses SPACER_ROOT or the current directory, without ancestor
-search. The documentation describes the committed application behavior.
-
-## Documentation
-
-- [Documentation index](docs/README.md): Choose tutorials, how-to guides, reference, or explanation.
+Spacer 0.0.1 is an alpha. Its hexagonal architecture separates presentation,
+domain/application services, and data adapters. The versioned JSON registry owns
+registrations and context; Git owns repository and worktree state. Finishing a
+clean linked worktree retains its branch. Unregistering preserves files.
+Workspace discovery uses SPACER_ROOT or the nearest ancestor workspace.
 
 ## Tutorials
 
-- [Your first workspace](docs/tutorials/first-workspace.md): Guided exercise in an isolated workspace.
+- [Your first workspace](docs/tutorials/first-workspace.md): Create a repository and complete a worktree lifecycle.
 
 ## How-to guides
 
-- [Install from source](docs/how-to/install.md): Cargo and Nix installation, plus development builds.
-- [Set up navigation](docs/how-to/shell-navigation.md): bash, zsh, and sh wrappers and root configuration.
-- [Add an existing project](docs/how-to/existing-project.md): Track an existing directory without moving it.
+- [Installation](docs/how-to/install.md): Verified archives, Cargo, Nix, and prerequisites.
+- [Shell navigation](docs/how-to/shell-navigation.md): Wrappers, managed sessions, and Windows navigation.
+- [Register an existing project](docs/how-to/existing-project.md): Register a primary repository without moving it.
+- [Recovery](docs/how-to/recover-workspace.md): Legacy compatibility, conflicts, and partial failures.
+- [Release verification](docs/how-to/verify-release.md): Native quality gates and archive smoke tests.
 
 ## Reference
 
-- [CLI](docs/reference/cli.md): Commands, arguments, effects, and TUI keys.
-- [Configuration](docs/reference/configuration.md): Environment precedence, JSON state, and persistence limitations.
-
-- [Rust API](docs/reference/rust-api.md): Workspace construction, ports, use cases, errors, and library migration.
+- [CLI](docs/reference/cli.md): Commands, effects, and TUI keys.
+- [Configuration](docs/reference/configuration.md): Context, discovery, schema, and persistence.
+- [Rust API](docs/reference/rust-api.md): Ports, use cases, and library migration.
+- [Release notes](RELEASE_NOTES.md): Supported platforms, compatibility changes, and alpha limits.
 
 ## Explanation
 
-- [Hexagonal architecture](docs/explanation/architecture.md): Presentation, domain/application services, ports, data adapters, and composition.
+- [Architecture](docs/explanation/architecture.md): Presentation, domain, data, and composition.
 
 ## Optional
 
-- [Project overview](README.md): Repository entry point.
+- [Documentation index](docs/README.md): Diátaxis navigation.
+- [Project overview](README.md): Quickstart and development instructions.
 - [License](LICENSE): MIT license terms.
-
-- [Recovery](docs/how-to/recover-workspace.md): Legacy compatibility and failed mutations.
-
-- [Release verification](docs/how-to/verify-release.md): CI, packaging, and smoke tests.

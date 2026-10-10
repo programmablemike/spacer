@@ -1,17 +1,14 @@
 # Set up shell navigation
 
-[Documentation](../README.md) / How-to guide
+[Documentation](../README.md) / How-to
 
-Prerequisites: an installed `spacer` on PATH and an initialized workspace with
-at least one space and project.
+Use an installed `spacer` on PATH and an initialized workspace. Without a wrapper,
+navigation commands print a validated path. The wrapper changes the parent
+shell's current directory only after successful resolution.
 
-Set the root to your workspace's absolute path:
+## Persistent integration
 
-```sh
-export SPACER_ROOT="$HOME/code"
-```
-
-Add the appropriate integration line to your shell's startup file:
+Add the appropriate line to your shell startup file:
 
 | Shell | File | Line |
 | --- | --- | --- |
@@ -19,35 +16,56 @@ Add the appropriate integration line to your shell's startup file:
 | bash | `~/.bashrc` | `eval "$(spacer shell integration bash)"` |
 | sh | `~/.profile` | `eval "$(spacer shell integration sh)"` |
 
-Also export `SPACER_ROOT` there if you want the same workspace in future sessions.
-Start a new shell or source the startup file. With `personal` and `website`
-already registered, run:
+Export an absolute root there if you want one workspace selected across sessions:
+
+```sh
+export SPACER_ROOT="$HOME/code"
+```
+
+Otherwise, Spacer finds the nearest ancestor workspace. External project paths
+need an explicit root. Start a new shell or source your startup file, then use
+registered targets:
 
 ```sh
 spacer space go personal
 spacer project go website --space personal
-pwd
+spacer go personal/website
 ```
 
-The final command prints the project's directory. The wrapper intercepts these
-two navigation commands; other commands continue to run the binary normally.
-`spacer shell` prints integration code; it does not launch a managed shell.
+`spacer go personal/website/feat/login` navigates to the actual Git checkout for
+the branch `feat/login`. Missing targets return an error and preserve the current
+directory. Other commands continue to invoke the binary normally.
 
-Without integration, use the binary's printed path explicitly:
+## Temporary managed sessions
+
+On macOS/Linux, run `spacer shell` from a workspace and `exit` to leave it. Choose
+a shell explicitly with `spacer shell --shell /bin/bash` or `--shell /bin/zsh`.
+The session exports an absolute `SPACER_ROOT` and `SPACER_SHELL_ACTIVE=1`; nested
+managed sessions are refused.
+
+Bash loads your `.bashrc`, then the navigation wrapper, prompt indicator, and
+static completions. Zsh loads your `.zshenv` and `.zshrc`, respecting the original
+`ZDOTDIR`. It skips global interactive startup files to keep bootstrap predictable;
+the system `.zshenv` still runs. Your own startup files remain responsible for any
+interactive prompts they introduce. POSIX sh receives the workspace environment
+only; load the wrapper separately if needed.
+
+`spacer completions bash`, `zsh`, or `fish` prints a static completion script.
+Fish has no managed-session support in alpha.
+
+## Without a wrapper
+
+Use the path directly while preserving resolution failure:
 
 ```sh
-project_path=$(command spacer project go website --space personal) && cd "$project_path"
+project_path=$(spacer path project website --space personal) && cd "$project_path"
 ```
 
-This form also propagates resolution failure before attempting `cd`. The current
-wrapper does not explicitly guard that failure; use known registered targets.
-Other shells can consume printed paths using their own directory-changing syntax.
+Windows has no managed shell or supported navigation wrapper. In PowerShell:
 
-If projects disappear after navigation, check `SPACER_ROOT`. Without that
-variable, each invocation treats its current directory as the workspace root;
-there is no ancestor search. See [configuration](../reference/configuration.md).
+```powershell
+$projectPath = spacer path project website --space personal
+if ($LASTEXITCODE -eq 0) { Set-Location -LiteralPath $projectPath }
+```
 
-For a temporary managed session, run `spacer shell` from an initialized workspace
-and `exit` to leave it. `spacer go SPACE/PROJECT/CHANGE` supports branch names
-containing slashes. Resolution failures preserve the current directory and return
-a nonzero status; no directory change is attempted.
+See [configuration](../reference/configuration.md) for discovery and context rules.

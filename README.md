@@ -10,13 +10,16 @@ Organize and navigate your local development projects from the command line.
 Spacer groups projects into spaces and provides a terminal browser for your
 workspace.
 
-**Status: alpha preparation.** Spacer creates and registers local Git repositories
+**Status: 0.0.1 alpha.** Spacer creates and registers local Git repositories
 and manages linked worktrees. Finish preserves branches; unregister preserves
 files. See [recovery guidance](docs/how-to/recover-workspace.md) for legacy data.
 
-## Install from source
+## Install
 
-You need a Rust toolchain with Cargo. From a checkout of this repository:
+Download a checksummed archive from the [alpha release](https://github.com/programmablemike/spacer/releases/tag/v0.0.1),
+or build from source with the pinned Rust 1.94.0 toolchain. Git must be on PATH.
+See [installation](docs/how-to/install.md) for platform selection and checksums.
+From a checkout of this repository:
 
 ```sh
 cargo install --path . --locked
@@ -24,7 +27,7 @@ spacer --help
 ```
 
 Ensure Cargo's installation directory (usually `~/.cargo/bin`) is on your `PATH`.
-Git is needed for the data layer's Git adapter and its integration tests.
+Configure your own Git commit identity before making the tutorial's first commit.
 
 With Nix and flakes enabled, you can build and run from the checkout instead:
 
@@ -42,6 +45,7 @@ folders:
 ```sh
 mkdir -p "$HOME/code"
 export SPACER_ROOT="$HOME/code"
+unset SPACER_SPACE SPACER_PROJECT
 spacer workspace init
 
 spacer space create personal
@@ -91,9 +95,9 @@ spacer project go website
 
 Export `SPACER_ROOT` in your shell startup file as well if you want it to persist
 across sessions. Without it, Spacer searches for the nearest ancestor workspace. External project
-paths require an explicit root.
+paths require an explicit root. For a temporary managed session, run `spacer shell`.
 
-## Track changes
+## Work on a change
 
 A change is a linked Git worktree. Make an initial commit before starting one:
 
@@ -101,6 +105,8 @@ A change is a linked Git worktree. Make an initial commit before starting one:
 git -C "$SPACER_ROOT/personal/website" commit --allow-empty -m "Initial commit"
 spacer change start feature-x --project website --space personal
 spacer change list --project website --space personal
+spacer go personal/website/feature-x
+cd "$SPACER_ROOT"
 spacer change finish feature-x --project website --space personal
 ```
 
@@ -153,14 +159,17 @@ For command details, run `spacer --help` or a subcommand's `--help`.
 
 - Clone, fetch, push, merge, and branch deletion remain user-managed Git operations.
 - `space delete` and `project delete` remove tracking records, not directories.
-  They refuse removal while tracked children remain and clear affected saved
-  selections. Finish tracked changes before removing a project, and remove
-  projects before removing a space.
+  Spaces must have no registered projects. Projects must have no legacy tracking
+  entries; their Git worktrees can remain. Affected saved selections are cleared.
 - Configuration writes are atomic and detect concurrent changes. Retry a
   conflicting command after reopening the workspace; back up metadata before
   manual edits.
 - Shell integration is provided for bash, zsh, and sh. Other shells can use the
   paths printed by navigation commands with their own directory-changing syntax.
+  Managed shells are macOS/Linux only.
+
+See [release notes](RELEASE_NOTES.md) for tested platforms, migration, and alpha
+limits, including partial-failure recovery and session context validation.
 
 ## Development
 

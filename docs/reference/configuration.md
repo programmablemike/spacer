@@ -38,6 +38,7 @@ The CLI and TUI use `<root>/.spacer/config.json`. Example with an absolute root:
 
 ```json
 {
+  "schema_version": 1,
   "spaces": [{"name": "personal", "path": "/home/user/code/personal"}],
   "projects": [{"name": "website", "space": "personal", "path": "/home/user/code/personal/website"}],
   "changes": [{"name": "feature-x", "project": "website", "space": "personal"}],
@@ -49,13 +50,13 @@ The CLI and TUI use `<root>/.spacer/config.json`. Example with an absolute root:
 The three arrays are required on deserialization. Active selections are optional
 and omitted when unset. Projects are identified by name and space; changes by
 name, project, and space. The two active fields jointly identify the selected project. Schema version 1 is written on successful mutation. Unversioned configurations
-are read as legacy version 0; future versions and unknown top-level fields are
+are read as legacy version 0; future versions and unknown fields are
 rejected without rewriting them.
 
-Missing configuration loads as empty state. Mutation followed by save creates
-metadata as needed, even without an explicit init. Invalid JSON is an error.
-`workspace init` loads configuration first, then checks for `config.json` existence.
-Malformed data is reported without being overwritten.
+The registry adapter can load absent configuration as empty state. The CLI
+requires `workspace init` before ordinary commands. Initialization preserves
+existing valid metadata and refuses malformed data. The `changes` array contains
+legacy tracking entries only; actual Git worktrees are discovered from Git.
 
 ## Invariants and recovery
 

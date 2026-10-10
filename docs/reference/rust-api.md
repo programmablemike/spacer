@@ -7,7 +7,7 @@
 | Package | Public surface | Dependencies |
 | --- | --- | --- |
 | `spacer-core` | Models, `Workspace`, outbound ports, `Error`/`Result` | Standard library only |
-| `spacer-data` | `JsonRegistry`, `LocalFilesystem`, `GitCli` | `spacer-core`, Serde, serde_json |
+| `spacer-data` | `JsonRegistry`, `LocalFilesystem`, `GitCli` | `spacer-core`, Serde, serde_json, tempfile |
 | `spacer` | CLI/TUI executable and composition root | Both libraries plus presentation dependencies |
 
 Presentation modules depend on the core API. Only the executable's composition
@@ -44,7 +44,9 @@ rules, registry validation, and recovery behavior.
 `initialize()` returns `true` when it writes the initial configuration and `false`
 when metadata already exists. `root()` returns the configured path. `snapshot()`
 returns an owned copy with effective context for presentation use. Mutating that
-copy does not change the workspace.
+copy does not change the workspace. `view()` additionally queries the registered
+repositories for actual Git worktrees and returns an owned `WorkspaceView`. It
+fails if a repository cannot be read; it does not silently omit failures.
 
 ## Use cases
 
@@ -58,6 +60,7 @@ copy does not change the workspace.
 | `start_change`, `finish_change` | Persist addition/removal of metadata tracking entries. |
 | `create_git_project` | Initialize a new/empty directory as Git and register it; create no commit. |
 | `register_project` | Validate and register an existing primary non-bare repository without modifying its files. |
+| `space_path`, `project_path`, `change_path` | Resolve existing directories, using actual Git paths for changes. |
 | `worktrees` | Query actual Git worktrees for a registered project. |
 | `start_worktree` | Create a new branch/worktree from an explicit base such as `HEAD`; no tracking entry is added. |
 | `close_worktree` | Find a branch-backed checkout by its observed Git path and remove it without force; refuse the primary checkout. Retain its branch. |
@@ -69,8 +72,8 @@ queries run against Git on each call.
 
 New worktrees use `<root>/.spacer/worktrees/<space>/<project>/<branch>`, outside
 the source tree. Existing/custom Git worktree paths remain authoritative.
-The application service rejects empty and traversing worktree paths; the Git
-adapter checks branch syntax. This is not a complete alpha path-validation policy.
+The application service enforces portable branch/path components and canonical
+containment; the Git adapter additionally checks Git branch syntax.
 Externally created worktrees retain their actual locations. Detached worktrees
 are observable but cannot be closed by the branch-name use case.
 
@@ -88,8 +91,8 @@ should match categories rather than parse that text.
 
 ## Migrating from the previous library API
 
-This is a breaking library refactor. Package versions are unchanged pending the
-next release decision.
+Version 0.0.1 starts the alpha series. Its API breaks compatibility with the
+previous unreleased library design:
 
 | Previous API | Replacement |
 | --- | --- |
@@ -102,7 +105,7 @@ next release decision.
 | `Space::create_dir`, `Project::create_dir`, `exists` | Use cases and filesystem adapters; models perform no I/O |
 | `ws.config()` / `ws.save()` | `ws.snapshot()` / automatic persistence in mutating use cases |
 
-The CLI still reads/writes `.spacer/config.json` in its existing format. The old
+The CLI reads/writes `.spacer/config.json` using versioned schema 1. The old
 Git backend's `.spacer/state.json` and directory-scanning registration require explicit reconciliation. See [recovery](../how-to/recover-workspace.md). Those files are left untouched; library callers must explicitly
 register projects through the service. There is no recursive project deletion in
 the new ports or service.

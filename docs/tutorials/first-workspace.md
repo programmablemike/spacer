@@ -3,8 +3,9 @@
 [Documentation](../README.md) / Tutorial
 
 In this exercise you will create a workspace, organize a project, and track a
-piece of work. You need an [installed Spacer binary](../how-to/install.md) on PATH
-and a POSIX-compatible shell. No existing repositories are needed.
+piece of work. You need an [installed Spacer binary](../how-to/install.md),
+Git on PATH with your own commit identity configured, and a POSIX-compatible
+shell. No existing repositories are needed.
 
 ## Create a practice workspace
 
@@ -57,11 +58,14 @@ when you want directory-changing integration.
 git -C "$SPACER_ROOT/personal/website" commit --allow-empty -m "Initial commit"
 spacer change start update-homepage --project website
 spacer change list --project website
+spacer path change update-homepage
 spacer change finish update-homepage --project website
 spacer change list --project website
+git -C "$SPACER_ROOT/personal/website" show-ref --verify refs/heads/update-homepage
 ```
 
-The first list contains `update-homepage`; the second reports no changes.
+The first list contains `update-homepage`; the second reports no changes. The
+final Git command confirms that the branch survives.
 Start creates a branch and checkout under `.spacer/worktrees`. Finish removes
 the clean checkout and retains its branch. Dirty and locked checkouts are refused.
 
