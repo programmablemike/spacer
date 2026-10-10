@@ -24,7 +24,10 @@ with tempfile.TemporaryDirectory(prefix="spacer native ") as directory:
                     "-c", "commit.gpgsign=false", "commit", "--allow-empty", "-m", "Initial"],
                    env=env, check=True, capture_output=True)
     binary_env = dict(env, PATH="") if args.empty_path else env
-    result = subprocess.run([str(binary)], env=binary_env, capture_output=True, text=True, timeout=90)
+    try:
+        result = subprocess.run([str(binary)], env=binary_env, capture_output=True, text=True, timeout=90)
+    except subprocess.TimeoutExpired as error:
+        raise AssertionError(f"Native webview timed out. stdout={error.stdout!r}; stderr={error.stderr!r}") from error
     assert result.returncode == 0 and '"success":true' in result.stdout, (result.stdout, result.stderr)
     assert (repository / ".git").is_dir()
     registry = json.loads((root / ".spacer/config.json").read_text())

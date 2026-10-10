@@ -31,6 +31,10 @@ jobs:
         with:
           persist-credentials: false
       - uses: cachix/install-nix-action@b85815f71a6de0ddee80b8a80a98d43f4bcc66c7 # v31
+      - uses: nix-community/cache-nix-action/restore@7df957e333c1e5da7721f60227dbba6d06080569 # v7
+        with:
+          primary-key: nix-${{ matrix.system }}-${{ github.sha }}
+          restore-prefixes-first-match: nix-${{ matrix.system }}-
       - name: Build and check Nix packages
         run: nix flake check --print-build-logs
       - name: Resolve tested outputs
@@ -43,8 +47,8 @@ jobs:
       - name: Packaged desktop lifecycle
         run: |
           if [[ "$RUNNER_OS" == "Linux" ]]; then
-            nix shell --inputs-from . nixpkgs#xvfb-run --command \
-              xvfb-run -a env WEBKIT_DISABLE_COMPOSITING_MODE=1 \
+            nix shell --inputs-from . nixpkgs#dbus nixpkgs#xvfb-run --command \
+              dbus-run-session -- xvfb-run -a env WEBKIT_DISABLE_COMPOSITING_MODE=1 \
               python3 tests/desktop-native.py result-smoke/bin/spacer-desktop --empty-path
           else
             python3 tests/desktop-native.py result-smoke/bin/spacer-desktop --empty-path
@@ -57,3 +61,9 @@ jobs:
           else
             test -f result-desktop/share/applications/Spacer.desktop
           fi
+      - uses: nix-community/cache-nix-action/save@7df957e333c1e5da7721f60227dbba6d06080569 # v7
+        if: always()
+        with:
+          primary-key: nix-${{ matrix.system }}-${{ github.sha }}
+          gc-max-store-size-linux: 2G
+          gc-max-store-size-macos: 2G

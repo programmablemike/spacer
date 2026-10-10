@@ -93,8 +93,9 @@ workspace data or Git operations.
 
 Spacer retains its own pinned nixpkgs input. Making it follow a different nixpkgs
 revision changes its build dependencies and is outside the tested configuration.
-There is no project binary cache configured: Nix can reuse dependencies from its
-usual cache, but may build Spacer locally.
+There is no public project binary cache configured: Nix can reuse dependencies
+from its usual cache, but may build Spacer locally. GitHub Actions caches its
+Nix store to speed up CI; that cache is not a substituter for user installations.
 
 The packages supply Git even when launched from Finder or a desktop menu.
 Git identity and user configuration remain your responsibility. Spacer does not
