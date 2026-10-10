@@ -47,7 +47,7 @@ pub fn draw(frame: &mut Frame, app: &App) {
     }
 
     // Help line
-    let help = Paragraph::new(" q/Ctrl-C: quit  Tab: next tab  j/k ↑↓: navigate")
+    let help = Paragraph::new(" Read-only snapshot | q: quit  Tab: switch  j/k: select")
         .style(Style::default().fg(Color::DarkGray));
     frame.render_widget(help, chunks[2]);
 }
@@ -60,6 +60,14 @@ fn render_spaces(frame: &mut Frame, app: &App, area: ratatui::layout::Rect) {
         .map(|s| ListItem::new(format!("{:20} {}", s.name, s.path.display())))
         .collect();
 
+    if items.is_empty() {
+        frame.render_widget(
+            Paragraph::new("No entries. Use CLI commands to create or register projects.")
+                .block(Block::default().borders(Borders::ALL)),
+            area,
+        );
+        return;
+    }
     let mut state = ListState::default();
     if !items.is_empty() {
         state.select(Some(app.selected));
@@ -85,6 +93,14 @@ fn render_projects(frame: &mut Frame, app: &App, area: ratatui::layout::Rect) {
         .map(|p| ListItem::new(format!("{:20} {:20} {}", p.space, p.name, p.path.display())))
         .collect();
 
+    if items.is_empty() {
+        frame.render_widget(
+            Paragraph::new("No entries. Use CLI commands to create or register projects.")
+                .block(Block::default().borders(Borders::ALL)),
+            area,
+        );
+        return;
+    }
     let mut state = ListState::default();
     if !items.is_empty() {
         state.select(Some(app.selected));
@@ -103,13 +119,35 @@ fn render_projects(frame: &mut Frame, app: &App, area: ratatui::layout::Rect) {
 }
 
 fn render_changes(frame: &mut Frame, app: &App, area: ratatui::layout::Rect) {
-    let items: Vec<ListItem> = app
+    let mut items: Vec<ListItem> = app
         .snapshot
         .changes
         .iter()
-        .map(|c| ListItem::new(format!("{:20} {:20} {}", c.space, c.project, c.name)))
+        .map(|c| {
+            ListItem::new(format!(
+                "{} / {} / {} (legacy tracking)",
+                c.space, c.project, c.name
+            ))
+        })
         .collect();
 
+    items.extend(app.worktrees.iter().map(|entry| {
+        ListItem::new(format!(
+            "{} / {} / {}  {}",
+            entry.space,
+            entry.project,
+            entry.worktree.branch.as_deref().unwrap_or("(detached)"),
+            entry.worktree.path.display()
+        ))
+    }));
+    if items.is_empty() {
+        frame.render_widget(
+            Paragraph::new("No entries. Use CLI commands to create or register projects.")
+                .block(Block::default().borders(Borders::ALL)),
+            area,
+        );
+        return;
+    }
     let mut state = ListState::default();
     if !items.is_empty() {
         state.select(Some(app.selected));
@@ -125,4 +163,36 @@ fn render_changes(frame: &mut Frame, app: &App, area: ratatui::layout::Rect) {
         .highlight_symbol("> ");
 
     frame.render_stateful_widget(list, area, &mut state);
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use ratatui::{backend::TestBackend, Terminal};
+    use spacer_core::{ProjectWorktree, WorkspaceSnapshot, WorkspaceView, Worktree};
+    #[test]
+    fn renders_empty_and_detached_worktree_snapshots() {
+        let mut terminal = Terminal::new(TestBackend::new(120, 12)).unwrap();
+        let mut app = App::new(WorkspaceView {
+            registry: WorkspaceSnapshot::default(),
+            worktrees: vec![],
+        });
+        terminal.draw(|frame| draw(frame, &app)).unwrap();
+        let screen = format!("{:?}", terminal.backend().buffer());
+        assert!(screen.contains("No entries"));
+        app.active_tab = Tab::Changes;
+        app.worktrees.push(ProjectWorktree {
+            space: "alpha".into(),
+            project: "web".into(),
+            worktree: Worktree {
+                path: "/custom-checkout".into(),
+                branch: None,
+                is_primary: false,
+            },
+        });
+        terminal.draw(|frame| draw(frame, &app)).unwrap();
+        let screen = format!("{:?}", terminal.backend().buffer());
+        assert!(screen.contains("detached"));
+        assert!(screen.contains("custom-checkout"));
+    }
 }

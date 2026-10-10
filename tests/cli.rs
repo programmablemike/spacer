@@ -52,7 +52,7 @@ fn shell_does_not_load_workspace_and_corrupt_state_errors_before_tui_setup() {
     let root = tmp.path();
     std::fs::create_dir(root.join(".spacer")).unwrap();
     std::fs::write(root.join(".spacer/config.json"), "broken").unwrap();
-    assert!(ok(root, &["shell", "sh"]).contains("spacer()"));
+    assert!(ok(root, &["shell", "integration", "sh"]).contains("spacer()"));
     let result = cli(root, &[]);
     assert!(!result.status.success());
     assert!(String::from_utf8_lossy(&result.stderr).contains("configuration"));
@@ -298,4 +298,54 @@ fn navigation_uses_external_git_paths_and_rejects_missing_checkouts() {
     assert!(!output.status.success());
     assert!(output.stdout.is_empty());
     assert!(String::from_utf8_lossy(&output.stderr).contains("missing"));
+}
+
+#[cfg(unix)]
+#[test]
+fn shell_wrappers_preserve_cwd_and_failure_status() {
+    let tmp = tempfile::tempdir().unwrap();
+    let root = tmp.path();
+    ok(root, &["workspace", "init"]);
+    ok(root, &["space", "create", "space with spaces"]);
+    let binary = std::path::Path::new(env!("CARGO_BIN_EXE_spacer"));
+    let path = std::env::join_paths(
+        std::iter::once(binary.parent().unwrap().to_owned())
+            .chain(std::env::split_paths(&std::env::var_os("PATH").unwrap())),
+    )
+    .unwrap();
+    for shell in ["bash", "zsh", "sh"] {
+        if Command::new(shell)
+            .arg("-c")
+            .arg("exit 0")
+            .status()
+            .is_err()
+        {
+            continue;
+        }
+        let output = Command::new(shell)
+            .arg("-c")
+            .arg(
+                r#"
+            eval "$(command spacer shell integration sh)" || exit 10
+            spacer go 'space with spaces' || exit 11
+            before=$PWD
+            spacer go missing && exit 12
+            [ "$before" = "$PWD" ] || exit 13
+            spacer path space missing && exit 14
+            [ "$before" = "$PWD" ] || exit 15
+            command spacer completions bash >/dev/null || exit 16
+        "#,
+            )
+            .env("PATH", &path)
+            .env("SPACER_ROOT", root)
+            .env_remove("SPACER_SPACE")
+            .env_remove("SPACER_PROJECT")
+            .output()
+            .unwrap();
+        assert!(
+            output.status.success(),
+            "{shell}: {}",
+            String::from_utf8_lossy(&output.stderr)
+        );
+    }
 }

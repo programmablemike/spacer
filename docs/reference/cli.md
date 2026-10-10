@@ -51,7 +51,7 @@ See [configuration](configuration.md) for context resolution.
 
 ## Shell integration
 
-`spacer shell [SHELL]` emits a wrapper for `zsh`, `bash`, or `sh`. If omitted,
+`spacer shell integration [SHELL]` emits a wrapper for `zsh`, `bash`, or `sh`. If omitted,
 SHELL is inferred from the basename of the `SHELL` environment variable, falling
 back to `sh`. Unsupported values fail. The wrapper turns `space go` and
 `project go` into directory changes. See [setup](../how-to/shell-navigation.md).
@@ -89,3 +89,15 @@ explicit metadata-only operations for legacy records. They do not touch Git.
 `go SPACE[/PROJECT[/CHANGE]]` resolves the same paths, including branch names
 containing slashes. Git-reported locations are authoritative. Missing directories
 fail with nonzero status and no path output. Detached worktrees require Git directly.
+
+`spacer shell [--shell PATH]` starts an interactive managed shell on macOS/Linux.
+It exports the absolute workspace root and refuses nested sessions. Bash/zsh
+load user startup files and then install navigation and static completions. Zsh
+respects `ZDOTDIR`; sh receives environment only. `spacer completions SHELL`
+prints bash/zsh/fish completion scripts without opening a workspace. Windows
+users use `path` with their shell's directory-changing command.
+
+The TUI loads registered repositories and their Git worktrees before entering
+raw mode. It displays detached checkouts and labels legacy tracking separately.
+Read errors abort startup without changing terminal modes. Normal exit, startup
+failure and panic restore the terminal; the view remains a read-only snapshot.
