@@ -26,6 +26,9 @@ pub enum ChangeCommands {
     },
     /// List changes (optionally filtered by project/space)
     List {
+        /// Show legacy metadata tracking entries instead of Git worktrees
+        #[arg(long)]
+        tracked: bool,
         #[arg(long)]
         project: Option<String>,
         /// Defaults to active space
@@ -34,6 +37,9 @@ pub enum ChangeCommands {
     },
     /// Finish (remove) a change
     Finish {
+        /// Remove only a legacy metadata tracking entry, preserving Git worktrees
+        #[arg(long)]
+        tracked: bool,
         /// Name of the change
         name: String,
         /// Project the change belongs to
@@ -61,30 +67,64 @@ pub fn run(args: ChangeArgs, ws: &mut spacer_core::Workspace) -> Result<()> {
             space,
         } => {
             let space = resolve_space(space, ws)?;
-            ws.start_change(&name, &project, &space)?;
-            println!(
-                "Started change '{}' in project '{}/{}'",
-                name, space, project
-            );
+            let checkout = ws.start_worktree(&name, &project, &space, "HEAD")?;
+            println!("Started change '{}' at {}", name, checkout.path.display());
         }
-        ChangeCommands::List { project, space } => {
+        ChangeCommands::List {
+            project,
+            space,
+            tracked,
+        } => {
             let space = space.or_else(|| ws.active_space());
-            let changes = ws.changes(project.as_deref(), space.as_deref());
-            if changes.is_empty() {
-                println!("No changes found.");
+            if tracked {
+                let changes = ws.changes(project.as_deref(), space.as_deref());
+                println!(
+                    "{}",
+                    Table::new(mapper::change_rows(&changes)).with(Style::sharp())
+                );
             } else {
-                let rows = mapper::change_rows(&changes);
-                println!("{}", Table::new(rows).with(Style::sharp()));
+                let mut rows = Vec::new();
+                for p in ws
+                    .projects(space.as_deref())
+                    .into_iter()
+                    .filter(|p| project.as_ref().is_none_or(|name| name == &p.name))
+                {
+                    for tree in ws
+                        .worktrees(&p.name, &p.space)?
+                        .into_iter()
+                        .filter(|w| !w.is_primary)
+                    {
+                        rows.push(mapper::WorktreeRow {
+                            space: p.space.clone(),
+                            project: p.name.clone(),
+                            branch: tree
+                                .branch
+                                .unwrap_or_else(|| "(detached; use Git directly)".into()),
+                            path: tree.path.display().to_string(),
+                        });
+                    }
+                }
+                if rows.is_empty() {
+                    println!("No changes found.");
+                } else {
+                    println!("{}", Table::new(rows).with(Style::sharp()));
+                }
             }
         }
         ChangeCommands::Finish {
+            tracked,
             name,
             project,
             space,
         } => {
             let space = resolve_space(space, ws)?;
-            ws.finish_change(&name, &project, &space)?;
-            println!("Finished change '{}'", name);
+            if tracked {
+                ws.finish_change(&name, &project, &space)?;
+                println!("Removed legacy tracking '{name}'; Git files preserved");
+            } else {
+                ws.close_worktree(&name, &project, &space)?;
+                println!("Finished change '{name}'; branch retained");
+            }
         }
     }
 

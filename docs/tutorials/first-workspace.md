@@ -38,7 +38,8 @@ The filesystem now contains:
 └── personal/website/
 ```
 
-The project directory is empty; Spacer has not initialized a Git repository.
+The project contains an initialized Git repository without commits. Git must be
+installed and your commit identity configured.
 
 ## Find your project
 
@@ -53,6 +54,7 @@ when you want directory-changing integration.
 ## Track a change
 
 ```sh
+git -C "$SPACER_ROOT/personal/website" commit --allow-empty -m "Initial commit"
 spacer change start update-homepage --project website
 spacer change list --project website
 spacer change finish update-homepage --project website
@@ -60,8 +62,8 @@ spacer change list --project website
 ```
 
 The first list contains `update-homepage`; the second reports no changes.
-These commands add and remove a tracking record. They do not create a branch,
-create a checkout, or modify project files.
+Start creates a branch and checkout under `.spacer/worktrees`. Finish removes
+the clean checkout and retains its branch. Dirty and locked checkouts are refused.
 
 ## Browse the result
 
