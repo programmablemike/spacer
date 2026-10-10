@@ -210,6 +210,12 @@ struct FakeFilesystem {
     fail: bool,
 }
 impl Filesystem for FakeFilesystem {
+    fn is_empty_or_missing(&self, _: &Path) -> Result<bool> {
+        Ok(true)
+    }
+    fn is_dir(&self, _: &Path) -> Result<bool> {
+        Ok(true)
+    }
     fn normalize(&self, path: &Path) -> Result<PathBuf> {
         Ok(path.into())
     }
@@ -228,6 +234,12 @@ struct FakeGit {
     fail: bool,
 }
 impl Git for FakeGit {
+    fn validate_repository(&self, _: &Path) -> Result<()> {
+        Ok(())
+    }
+    fn is_clean(&self, _: &Path) -> Result<bool> {
+        Ok(true)
+    }
     fn initialize(&self, _: &Path) -> Result<()> {
         self.calls.lock().unwrap().push("init".into());
         if self.fail {

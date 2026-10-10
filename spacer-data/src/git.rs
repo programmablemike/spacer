@@ -7,6 +7,44 @@ use std::process::Command;
 #[derive(Default)]
 pub struct GitCli;
 impl Git for GitCli {
+    fn validate_repository(&self, repository: &Path) -> Result<()> {
+        let bare = run(
+            repository,
+            &["rev-parse".as_ref(), "--is-bare-repository".as_ref()],
+        )?;
+        if bare != b"false\n" {
+            return Err(Error::InvalidOperation(
+                "bare repositories are not supported".into(),
+            ));
+        }
+        let trees = self.worktrees(repository)?;
+        let primary = trees
+            .first()
+            .ok_or_else(|| Error::Git("repository has no primary checkout".into()))?;
+        let actual = std::fs::canonicalize(repository).map_err(|e| Error::Git(e.to_string()))?;
+        let expected =
+            std::fs::canonicalize(&primary.path).map_err(|e| Error::Git(e.to_string()))?;
+        if actual != expected {
+            return Err(Error::InvalidOperation(
+                "register the primary repository root, not a subdirectory or linked worktree"
+                    .into(),
+            ));
+        }
+        Ok(())
+    }
+    fn is_clean(&self, worktree: &Path) -> Result<bool> {
+        Ok(run(
+            worktree,
+            &[
+                "status".as_ref(),
+                "--porcelain=v1".as_ref(),
+                "--untracked-files=all".as_ref(),
+                "--ignored".as_ref(),
+            ],
+        )?
+        .is_empty())
+    }
+
     fn initialize(&self, repository: &Path) -> Result<()> {
         run(repository, &["init".as_ref()]).map(|_| ())
     }
@@ -19,6 +57,22 @@ impl Git for GitCli {
                 branch.as_ref(),
             ],
         )?;
+        run(
+            repository,
+            &["rev-parse".as_ref(), "--verify".as_ref(), "HEAD".as_ref()],
+        )
+        .map_err(|_| {
+            Error::Git(
+                "project has no initial commit; create a commit with Git before starting a change"
+                    .into(),
+            )
+        })?;
+        if path.try_exists().map_err(|e| Error::Git(e.to_string()))? {
+            return Err(Error::AlreadyExists(format!(
+                "worktree target '{}' already exists; inspect it before retrying",
+                path.display()
+            )));
+        }
         let path = std::path::absolute(path)
             .map_err(|e| Error::Git(format!("invalid worktree path: {e}")))?;
         run(

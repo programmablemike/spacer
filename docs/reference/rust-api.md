@@ -56,7 +56,8 @@ copy does not change the workspace.
 | `set_active_space`, `set_active_project` | Validate the target and save a coherent space/project pair; changing space clears the project. |
 | `active_space`, `active_project`, `active_project_in` | Read effective context; `active_project_in(space)` returns a default only for the selected space. |
 | `start_change`, `finish_change` | Persist addition/removal of metadata tracking entries. |
-| `create_git_project` | Explicitly initialize Git as well as create/register a project. |
+| `create_git_project` | Initialize a new/empty directory as Git and register it; create no commit. |
+| `register_project` | Validate and register an existing primary non-bare repository without modifying its files. |
 | `worktrees` | Query actual Git worktrees for a registered project. |
 | `start_worktree` | Create a new branch/worktree from an explicit base such as `HEAD`; no tracking entry is added. |
 | `close_worktree` | Find a branch-backed checkout by its observed Git path and remove it without force; refuse the primary checkout. Retain its branch. |
@@ -66,7 +67,8 @@ Mutating tracking use cases save before returning success; there is no public
 refresh it automatically. Reopen to see external registry changes. Git worktree
 queries run against Git on each call.
 
-New worktrees retain the existing library convention `<project-path>/<branch>`.
+New worktrees use `<root>/.spacer/worktrees/<space>/<project>/<branch>`, outside
+the source tree. Existing/custom Git worktree paths remain authoritative.
 The application service rejects empty and traversing worktree paths; the Git
 adapter checks branch syntax. This is not a complete alpha path-validation policy.
 Externally created worktrees retain their actual locations. Detached worktrees
@@ -75,8 +77,8 @@ are observable but cannot be closed by the branch-name use case.
 ## Outbound ports
 
 - `Registry`: `load`, `save`, and `is_initialized`; load/save domain snapshots.
-- `Filesystem`: `normalize`, `create_dir_all`; no project-removal policy or recursive deletion.
-- `Git`: `initialize`, `add_worktree`, `worktrees`, and `remove_worktree`; no
+- `Filesystem`: `normalize`, `is_dir`, `is_empty_or_missing`, `create_dir_all`; no project-removal policy or recursive deletion.
+- `Git`: `validate_repository`, `is_clean`, `initialize`, `add_worktree`, `worktrees`, and `remove_worktree`; no
   registration or active-context policy.
 
 Implementations must be `Send + Sync` and return `spacer_core::Result`.

@@ -240,7 +240,7 @@ impl Workspace {
         space: &str,
         path: Option<PathBuf>,
     ) -> Result<Project> {
-        self.create_project_with(name, space, path, false)
+        self.create_project_with(name, space, path, false, false)
     }
     /// Explicit Git use case; ordinary create_project remains directory/metadata-only.
     pub fn create_git_project(
@@ -249,7 +249,10 @@ impl Workspace {
         space: &str,
         path: Option<PathBuf>,
     ) -> Result<Project> {
-        self.create_project_with(name, space, path, true)
+        self.create_project_with(name, space, path, true, false)
+    }
+    pub fn register_project(&mut self, name: &str, space: &str, path: PathBuf) -> Result<Project> {
+        self.create_project_with(name, space, Some(path), false, true)
     }
     fn create_project_with(
         &mut self,
@@ -257,6 +260,7 @@ impl Workspace {
         space: &str,
         path: Option<PathBuf>,
         initialize_git: bool,
+        register: bool,
     ) -> Result<Project> {
         validation::entity_name(name)?;
         let parent = self.space(space)?;
@@ -285,13 +289,23 @@ impl Workspace {
                 )));
             }
         }
-        self.filesystem.create_dir_all(&project.path)?;
+        if register {
+            self.git.validate_repository(&project.path)?;
+        } else {
+            if initialize_git && !self.filesystem.is_empty_or_missing(&project.path)? {
+                return Err(Error::InvalidOperation(
+                    "project directory is not empty; register an existing repository instead"
+                        .into(),
+                ));
+            }
+            self.filesystem.create_dir_all(&project.path)?;
+        }
         if initialize_git {
             self.git.initialize(&project.path)?;
         }
         let mut next = self.state.clone();
         next.projects.push(project.clone());
-        self.persist(next)?;
+        self.persist(next).map_err(|e| Error::Persistence(format!("{e}; directory '{}' may already exist; inspect it and retry registration instead of deleting it", project.path.display())))?;
         Ok(project)
     }
     /// Unregister only, regardless of which Git implementation is injected.
@@ -357,7 +371,9 @@ impl Workspace {
     }
     /// Observe actual Git state for a registered project. Does not create registry entries.
     pub fn worktrees(&self, project: &str, space: &str) -> Result<Vec<Worktree>> {
-        self.git.worktrees(&self.project(project, space)?.path)
+        let repository = &self.project(project, space)?.path;
+        self.git.validate_repository(repository)?;
+        self.git.worktrees(repository)
     }
     /// Explicit worktree operation; branch-backed checkouts are observed through Git.
     pub fn start_worktree(
@@ -369,6 +385,7 @@ impl Workspace {
     ) -> Result<Worktree> {
         validation::change_name(name)?;
         let repository = &self.project(project, space)?.path;
+        self.git.validate_repository(repository)?;
         if self
             .git
             .worktrees(repository)?
@@ -379,7 +396,14 @@ impl Workspace {
                 "worktree for branch '{name}' already exists"
             )));
         }
-        let path = repository.join(name);
+        let metadata = self.filesystem.normalize(&self.root.join(".spacer"))?;
+        let parent = metadata.join("worktrees").join(space).join(project);
+        let path = self.filesystem.normalize(&parent.join(name))?;
+        if !path.starts_with(&parent) || path.starts_with(repository) {
+            return Err(Error::InvalidOperation(
+                "worktree path escapes its managed directory or overlaps project sources".into(),
+            ));
+        }
         self.git.add_worktree(repository, name, &path, base)?;
         Ok(Worktree {
             path,
@@ -400,6 +424,10 @@ impl Workspace {
             return Err(Error::InvalidOperation(
                 "cannot close the primary working tree".into(),
             ));
+        }
+        self.git.validate_repository(repository)?;
+        if !self.git.is_clean(&worktree.path)? {
+            return Err(Error::InvalidOperation("worktree contains modified, untracked, or ignored files; preserve them before finishing".into()));
         }
         self.git.remove_worktree(repository, &worktree.path)
     }
