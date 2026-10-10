@@ -24,7 +24,7 @@ pub enum SpaceCommands {
     },
     /// List all spaces
     List,
-    /// Delete a space
+    /// Remove an empty space registration, preserving files
     Delete {
         /// Name of the space to delete
         name: String,

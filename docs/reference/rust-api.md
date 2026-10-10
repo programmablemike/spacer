@@ -36,7 +36,10 @@ fn open(root: PathBuf) -> spacer_core::Result<Workspace> {
 `Registry`, `Filesystem`, and `Git`, owns them for its lifetime, and never reads
 environment variables. Pass `ContextOverrides` explicitly to apply session
 space/project selections. Nonempty overrides take precedence over saved context;
-metadata writes do not persist overrides.
+metadata writes do not persist overrides. Unknown session overrides fail during
+open. Space and project selections are resolved as a pair; a project override
+is bound to its resolved space. See [configuration](configuration.md) for name
+rules, registry validation, and recovery behavior.
 
 `initialize()` returns `true` when it writes the initial configuration and `false`
 when metadata already exists. `root()` returns the configured path. `snapshot()`
@@ -49,9 +52,9 @@ copy does not change the workspace.
 | --- | --- |
 | `spaces`, `projects`, `changes` | Query loaded tracking state, with optional filters. |
 | `create_space`, `create_project` | Create directories and persist records. |
-| `delete_space`, `delete_project` | Persist removal of records only; never delete files. |
-| `set_active_space`, `set_active_project` | Validate the target and persist a default selection. |
-| `active_space`, `active_project` | Read effective session/default context. |
+| `delete_space`, `delete_project` | Reject tracked children, remove the record, and clear affected saved context; never delete files. |
+| `set_active_space`, `set_active_project` | Validate the target and save a coherent space/project pair; changing space clears the project. |
+| `active_space`, `active_project`, `active_project_in` | Read effective context; `active_project_in(space)` returns a default only for the selected space. |
 | `start_change`, `finish_change` | Persist addition/removal of metadata tracking entries. |
 | `create_git_project` | Explicitly initialize Git as well as create/register a project. |
 | `worktrees` | Query actual Git worktrees for a registered project. |

@@ -156,9 +156,9 @@ For command details, run `spacer --help` or a subcommand's `--help`.
 
 - The CLI tracks metadata; Git automation is not integrated yet.
 - `space delete` and `project delete` remove tracking records, not directories.
-  They do not clean up child records or saved active selections. Finish tracked
-  changes before deleting a project, remove projects before deleting a space,
-  and select a remaining valid context afterward.
+  They refuse removal while tracked children remain and clear affected saved
+  selections. Finish tracked changes before removing a project, and remove
+  projects before removing a space.
 - Configuration writes are not atomic or coordinated between processes. Avoid
   simultaneous commands that modify the same workspace and back up
   `.spacer/config.json` before significant changes.

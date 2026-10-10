@@ -356,6 +356,10 @@ fn tracking_and_unregistering_never_call_git() {
 #[test]
 fn session_context_is_effective_but_never_persisted() {
     let registry = MemoryRegistry::default();
+    let mut initial = mem_ws();
+    initial.create_space("session", None).unwrap();
+    initial.create_project("override", "session", None).unwrap();
+    *registry.state.lock().unwrap() = initial.snapshot();
     let mut ws = Workspace::open(
         "/test".into(),
         registry.clone(),
@@ -410,4 +414,251 @@ fn close_uses_observed_path_and_rejects_primary() {
     ));
     ws.close_worktree("feature", "web", "alpha").unwrap();
     assert_eq!(*git.calls.lock().unwrap(), vec!["/elsewhere/custom"]);
+}
+
+fn reopen(state: WorkspaceSnapshot, context: ContextOverrides) -> Result<Workspace> {
+    Workspace::open(
+        "/test".into(),
+        MemoryRegistry {
+            state: Arc::new(Mutex::new(state)),
+            ..Default::default()
+        },
+        FakeFilesystem::default(),
+        FakeGit::default(),
+        context,
+    )
+}
+
+#[test]
+fn parent_removal_refuses_tracked_children_without_mutation() {
+    let mut ws = mem_ws();
+    ws.create_space("alpha", None).unwrap();
+    ws.create_project("web", "alpha", None).unwrap();
+    ws.start_change("feat/login", "web", "alpha").unwrap();
+    let before = ws.snapshot();
+    assert!(matches!(
+        ws.delete_space("alpha"),
+        Err(Error::InvalidOperation(_))
+    ));
+    assert!(matches!(
+        ws.delete_project("web", "alpha"),
+        Err(Error::InvalidOperation(_))
+    ));
+    assert_eq!(before, ws.snapshot());
+}
+
+#[test]
+fn project_identity_includes_space_and_switching_clears_selection() {
+    let mut ws = mem_ws();
+    for space in ["alpha", "beta"] {
+        ws.create_space(space, None).unwrap();
+        ws.create_project("web", space, None).unwrap();
+    }
+    ws.set_active_project("web", "alpha").unwrap();
+    assert_eq!(ws.active_space().as_deref(), Some("alpha"));
+    assert_eq!(ws.active_project_in("alpha").as_deref(), Some("web"));
+    assert_eq!(ws.active_project_in("beta"), None);
+    ws.delete_project("web", "beta").unwrap();
+    assert_eq!(ws.active_project().as_deref(), Some("web"));
+    ws.set_active_space("alpha").unwrap();
+    assert_eq!(ws.active_project().as_deref(), Some("web"));
+    ws.set_active_space("beta").unwrap();
+    assert_eq!(ws.active_project(), None);
+    ws.set_active_project("web", "alpha").unwrap();
+    ws.delete_project("web", "alpha").unwrap();
+    assert_eq!(ws.active_project(), None);
+    ws.delete_space("alpha").unwrap();
+    assert_eq!(ws.active_space(), None);
+}
+
+#[test]
+fn session_space_does_not_retarget_saved_project() {
+    let mut ws = mem_ws();
+    for space in ["alpha", "beta"] {
+        ws.create_space(space, None).unwrap();
+        ws.create_project("web", space, None).unwrap();
+    }
+    ws.set_active_project("web", "alpha").unwrap();
+    let snapshot = ws.snapshot();
+    let overridden = reopen(
+        snapshot.clone(),
+        ContextOverrides {
+            space: Some("beta".into()),
+            project: None,
+        },
+    )
+    .unwrap();
+    assert_eq!(overridden.active_project(), None);
+    let mut overridden = reopen(
+        snapshot,
+        ContextOverrides {
+            space: None,
+            project: Some("web".into()),
+        },
+    )
+    .unwrap();
+    overridden.set_active_space("beta").unwrap();
+    assert_eq!(overridden.active_space().as_deref(), Some("alpha"));
+    overridden.delete_project("web", "alpha").unwrap();
+    assert_eq!(overridden.active_project(), None);
+}
+
+#[test]
+fn stale_defaults_are_cleared_without_writing_on_open() {
+    let mut ws = mem_ws();
+    ws.create_space("alpha", None).unwrap();
+    let mut state = ws.snapshot();
+    state.active_space = Some("alpha".into());
+    state.active_project = Some("missing".into());
+    let registry = MemoryRegistry {
+        state: Arc::new(Mutex::new(state.clone())),
+        ..Default::default()
+    };
+    let mut reopened = Workspace::open(
+        "/test".into(),
+        registry.clone(),
+        FakeFilesystem::default(),
+        FakeGit::default(),
+        ContextOverrides::default(),
+    )
+    .unwrap();
+    assert_eq!(reopened.active_project(), None);
+    assert_eq!(*registry.state.lock().unwrap(), state);
+    reopened.create_space("beta", None).unwrap();
+    assert_eq!(registry.state.lock().unwrap().active_project, None);
+    state.active_space = Some("missing".into());
+    let reopened = reopen(state, ContextOverrides::default()).unwrap();
+    assert_eq!(reopened.active_space(), None);
+    assert_eq!(reopened.active_project(), None);
+}
+
+#[test]
+fn invalid_session_context_fails_instead_of_falling_back() {
+    for context in [
+        ContextOverrides {
+            space: Some("missing".into()),
+            project: None,
+        },
+        ContextOverrides {
+            space: None,
+            project: Some("missing".into()),
+        },
+    ] {
+        assert!(matches!(
+            reopen(WorkspaceSnapshot::default(), context),
+            Err(Error::InvalidOperation(_))
+        ));
+    }
+}
+
+#[test]
+fn invalid_loaded_relationships_and_duplicates_are_rejected() {
+    let mut ws = mem_ws();
+    ws.create_space("alpha", None).unwrap();
+    ws.create_project("web", "alpha", None).unwrap();
+    ws.start_change("feature", "web", "alpha").unwrap();
+    for kind in 0..5 {
+        let mut state = ws.snapshot();
+        match kind {
+            0 => state.spaces.clear(),
+            1 => state.projects.clear(),
+            2 => state.spaces.push(state.spaces[0].clone()),
+            3 => state.projects.push(state.projects[0].clone()),
+            _ => state.changes.push(state.changes[0].clone()),
+        }
+        assert!(matches!(
+            reopen(state, ContextOverrides::default()),
+            Err(Error::InvalidOperation(_))
+        ));
+    }
+}
+
+#[test]
+fn invalid_names_are_rejected_before_side_effects() {
+    let fs = FakeFilesystem::default();
+    let git = FakeGit::default();
+    let mut ws = Workspace::open(
+        "/test".into(),
+        MemoryRegistry::default(),
+        fs.clone(),
+        git.clone(),
+        ContextOverrides::default(),
+    )
+    .unwrap();
+    ws.create_space("alpha", None).unwrap();
+    ws.create_project("web", "alpha", None).unwrap();
+    let before = ws.snapshot();
+    let paths = fs.paths.lock().unwrap().len();
+    for name in [
+        "",
+        " ",
+        ".",
+        "..",
+        ".spacer",
+        "../escape",
+        "/absolute",
+        "a/b",
+        "a\\b",
+        "NUL.txt",
+        "com1",
+        "a:",
+        "trailing.",
+        "trailing ",
+        "line\nbreak",
+    ] {
+        assert!(ws.create_space(name, None).is_err(), "{name}");
+        assert!(
+            ws.create_git_project(name, "alpha", None).is_err(),
+            "{name}"
+        );
+    }
+    for name in [
+        "",
+        "../escape",
+        "/absolute",
+        "a//b",
+        "a/./b",
+        "a/../b",
+        "a\\b",
+        "HEAD",
+        "a.lock",
+        "a@{b",
+        "a b",
+        "-option",
+        "a?b",
+    ] {
+        assert!(ws.start_change(name, "web", "alpha").is_err(), "{name}");
+        assert!(
+            ws.start_worktree(name, "web", "alpha", "HEAD").is_err(),
+            "{name}"
+        );
+    }
+    assert_eq!(ws.snapshot(), before);
+    assert_eq!(fs.paths.lock().unwrap().len(), paths);
+    assert!(git.calls.lock().unwrap().is_empty());
+    ws.create_space("team space", None).unwrap();
+    ws.start_change("feat/login", "web", "alpha").unwrap();
+}
+
+#[test]
+fn failed_context_save_keeps_previous_pair() {
+    let registry = MemoryRegistry::default();
+    let mut ws = Workspace::open(
+        "/test".into(),
+        registry.clone(),
+        FakeFilesystem::default(),
+        FakeGit::default(),
+        ContextOverrides::default(),
+    )
+    .unwrap();
+    ws.create_space("alpha", None).unwrap();
+    ws.create_project("web", "alpha", None).unwrap();
+    ws.set_active_project("web", "alpha").unwrap();
+    ws.create_space("beta", None).unwrap();
+    let before = ws.snapshot();
+    *registry.fail.lock().unwrap() = true;
+    assert!(ws.set_active_space("beta").is_err());
+    assert!(ws.delete_project("web", "alpha").is_err());
+    assert_eq!(ws.snapshot(), before);
+    assert_eq!(*registry.state.lock().unwrap(), before);
 }

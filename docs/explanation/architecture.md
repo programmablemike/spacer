@@ -44,8 +44,9 @@ included in this implementation.
   context, and workspace snapshots. These types have no filesystem methods or
   serialization annotations.
 - `services/`: the `Workspace` inbound application API. It owns duplicate and
-  existence checks, operation ordering, metadata-only deletion semantics,
-  effective context resolution, and primary-worktree protection.
+  existence checks, portable name validation, parent-child integrity, operation
+  ordering, metadata-only deletion semantics, scoped active context, and
+  primary-worktree protection.
 - `ports/`: outbound interfaces for registry persistence, directory creation,
   and Git operations. Concrete adapters implement these interfaces.
 - `error.rs`: typed error categories that presentation adapters can distinguish
@@ -109,8 +110,8 @@ verify composition, persistence between invocations, and environment precedence.
 
 The existing JSON schema and metadata-based CLI behavior are preserved. Known
 limitations remain: non-atomic configuration writes, no cross-process locking,
-no ancestor discovery, and no cleanup of child records or active context when
-unregistering. The architecture makes those policies central rather than fixing
+no ancestor discovery, and incomplete path normalization/containment. Removing
+parents with tracked children is rejected; affected saved context is cleared. The architecture makes those policies central rather than fixing
 all of them as part of the structural refactor.
 
 The previous interchangeable `Backend`/store adapters have been removed. See the

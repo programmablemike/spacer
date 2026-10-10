@@ -31,7 +31,7 @@ pub enum ProjectCommands {
         #[arg(long)]
         space: Option<String>,
     },
-    /// Delete a project
+    /// Remove a project registration without tracked changes, preserving files
     Delete {
         /// Name of the project
         name: String,
@@ -67,8 +67,12 @@ fn resolve_space(flag: Option<String>, ws: &spacer_core::Workspace) -> Result<St
     })
 }
 
-fn resolve_project(flag: Option<String>, ws: &spacer_core::Workspace) -> Result<String> {
-    flag.or_else(|| ws.active_project()).ok_or_else(|| {
+fn resolve_project(
+    flag: Option<String>,
+    space: &str,
+    ws: &spacer_core::Workspace,
+) -> Result<String> {
+    flag.or_else(|| ws.active_project_in(space)).ok_or_else(|| {
         anyhow::anyhow!(
             "no project specified — pass a name or set one with `spacer project use <name>`"
         )
@@ -84,12 +88,14 @@ pub fn run(args: ProjectArgs, ws: &mut spacer_core::Workspace) -> Result<()> {
         }
         ProjectCommands::List { space } => {
             let space = space.or_else(|| ws.active_space());
+            let active_space = ws.active_space();
             let active = ws.active_project();
             let projects = ws.projects(space.as_deref());
             if projects.is_empty() {
                 println!("No projects found.");
             } else {
-                let rows = mapper::project_rows(&projects, active.as_deref());
+                let rows =
+                    mapper::project_rows(&projects, active_space.as_deref().zip(active.as_deref()));
                 println!("{}", Table::new(rows).with(Style::sharp()));
             }
         }
@@ -108,8 +114,8 @@ pub fn run(args: ProjectArgs, ws: &mut spacer_core::Workspace) -> Result<()> {
             None => println!("No active project. Set one with `spacer project use <name>`."),
         },
         ProjectCommands::Go { name, space } => {
-            let name = resolve_project(name, ws)?;
             let space = resolve_space(space, ws)?;
+            let name = resolve_project(name, &space, ws)?;
             let project = ws
                 .projects(Some(&space))
                 .into_iter()

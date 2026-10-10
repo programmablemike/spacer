@@ -73,3 +73,54 @@ fn environment_context_is_resolved_at_boundary_without_changing_defaults() {
     assert!(root.join("session/web").is_dir());
     assert_eq!(ok(root, &["space", "current"]).trim(), "saved");
 }
+
+#[test]
+fn scoped_context_and_parent_guards_survive_reopening() {
+    let tmp = tempfile::tempdir().unwrap();
+    let root = tmp.path();
+    for space in ["alpha", "beta"] {
+        ok(root, &["space", "create", space]);
+        ok(root, &["project", "create", "web", "--space", space]);
+    }
+    ok(root, &["project", "use", "web", "--space", "alpha"]);
+    assert_eq!(ok(root, &["space", "current"]).trim(), "alpha");
+    assert!(!cli(root, &["project", "go", "--space", "beta"])
+        .status
+        .success());
+    assert!(!ok(root, &["project", "list", "--space", "beta"]).contains('*'));
+    ok(root, &["change", "start", "feat/login", "--project", "web"]);
+    let path = root.join(".spacer/config.json");
+    let before = std::fs::read(&path).unwrap();
+    for args in [
+        &["space", "delete", "alpha"][..],
+        &["project", "delete", "web"][..],
+        &["space", "create", "../escape"][..],
+    ] {
+        let result = cli(root, args);
+        assert!(!result.status.success());
+        assert!(result.stdout.is_empty());
+        assert_eq!(std::fs::read(&path).unwrap(), before);
+    }
+    ok(root, &["space", "use", "beta"]);
+    assert!(ok(root, &["project", "current"]).contains("No active project"));
+    ok(root, &["project", "use", "web"]);
+    ok(root, &["project", "delete", "web"]);
+    assert!(ok(root, &["project", "current"]).contains("No active project"));
+    assert!(root.join("beta/web").is_dir());
+}
+
+#[test]
+fn malformed_relationships_do_not_rewrite_configuration() {
+    let tmp = tempfile::tempdir().unwrap();
+    let root = tmp.path();
+    std::fs::create_dir(root.join(".spacer")).unwrap();
+    let path = root.join(".spacer/config.json");
+    let data =
+        r#"{"spaces":[],"projects":[{"name":"web","space":"missing","path":"keep"}],"changes":[]}"#;
+    std::fs::write(&path, data).unwrap();
+    let result = cli(root, &["space", "create", "new"]);
+    assert!(!result.status.success());
+    assert!(String::from_utf8_lossy(&result.stderr).contains("missing space"));
+    assert_eq!(std::fs::read_to_string(path).unwrap(), data);
+    assert!(!root.join("new").exists());
+}

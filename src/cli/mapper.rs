@@ -56,11 +56,11 @@ pub fn space_rows(spaces: &[Space], active: Option<&str>) -> Vec<SpaceRow> {
         .collect()
 }
 
-pub fn project_rows(projects: &[&Project], active: Option<&str>) -> Vec<ProjectRow> {
+pub fn project_rows(projects: &[&Project], active: Option<(&str, &str)>) -> Vec<ProjectRow> {
     projects
         .iter()
         .map(|p| ProjectRow {
-            active: if active == Some(p.name.as_str()) {
+            active: if active == Some((p.space.as_str(), p.name.as_str())) {
                 '*'
             } else {
                 ' '
@@ -130,9 +130,9 @@ mod tests {
 
     #[test]
     fn project_rows_marks_active() {
-        let projects = [make_project("web", "alpha"), make_project("api", "alpha")];
+        let projects = [make_project("web", "alpha"), make_project("web", "beta")];
         let refs: Vec<&Project> = projects.iter().collect();
-        let rows = project_rows(&refs, Some("web"));
+        let rows = project_rows(&refs, Some(("alpha", "web")));
         assert_eq!(rows[0].active, '*');
         assert_eq!(rows[1].active, ' ');
     }
