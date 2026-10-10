@@ -124,8 +124,10 @@ fn enter_zsh(shell_path: &str, root: &std::path::Path) -> Result<i32> {
         ),
     )?;
 
+    // Skip global interactive startup; explicitly preserve user startup files.
     // zdotdir stays alive until the shell exits
     let status = Command::new(shell_path)
+        .arg("-d")
         .arg("-i")
         .env("SPACER_SHELL_ACTIVE", "1")
         .env("ZDOTDIR", zdotdir.path())
@@ -186,13 +188,13 @@ fn completions_hook(shell_name: &str) -> &'static str {
     match shell_name {
         "bash" => {
             "if command -v spacer >/dev/null 2>&1; then\n\
-             \tsource <(command spacer completions bash 2>/dev/null) 2>/dev/null || true\n\
+             \t_spacer_completion=$(command spacer completions bash 2>/dev/null) && eval \"$_spacer_completion\"; unset _spacer_completion\n\
              fi"
         }
         "zsh" => {
             "if command -v spacer >/dev/null 2>&1; then\n\
              \t(( $+functions[compdef] )) || { autoload -Uz compinit; compinit -i; }\n\
-             \tsource <(command spacer completions zsh 2>/dev/null) 2>/dev/null || true\n\
+             \t_spacer_completion=$(command spacer completions zsh 2>/dev/null) && eval \"$_spacer_completion\"; unset _spacer_completion\n\
              fi"
         }
         _ => "",
