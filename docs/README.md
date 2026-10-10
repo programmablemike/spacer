@@ -1,7 +1,7 @@
 # Spacer documentation
 
 Spacer organizes local Git projects into spaces, manages linked worktrees, and
-provides shell navigation and a read-only terminal browser.
+provides a Tauri desktop app, shell navigation, and a read-only terminal browser.
 
 The documentation follows [Diátaxis](https://diataxis.fr/): choose the kind of help
 you need below.
@@ -9,6 +9,7 @@ you need below.
 | Need | Start here |
 | --- | --- |
 | Learn through a guided exercise | [Your first workspace](tutorials/first-workspace.md) |
+| Use the graphical app | [Desktop guide](how-to/desktop.md) |
 | Install Spacer | [Installation](how-to/install.md) |
 | Navigate from your shell | [Set up navigation](how-to/shell-navigation.md) |
 | Register a repository you already have | [Add an existing project](how-to/existing-project.md) |

@@ -1,0 +1,25 @@
+{
+  "name": "spacer-desktop",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 127.0.0.1 --port 1420 --strictPort",
+    "build": "tsc --noEmit && vite build",
+    "test": "playwright test",
+    "tauri": "tauri",
+    "format:check": "prettier --check src tests index.html package.json tsconfig.json playwright.config.ts"
+  },
+  "dependencies": {
+    "@tauri-apps/api": "^2.12.3",
+    "@tauri-apps/plugin-clipboard-manager": "^2",
+    "@tauri-apps/plugin-dialog": "^2"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1",
+    "@tauri-apps/cli": "^2.12.2",
+    "prettier": "^3.9.10",
+    "typescript": "^5",
+    "vite": "^7"
+  }
+}

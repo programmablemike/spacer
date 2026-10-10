@@ -1,0 +1,31 @@
+[package]
+name = "spacer-desktop"
+version = "0.0.1"
+edition = "2021"
+description = "Desktop workspace and Git worktree manager"
+license = "MIT"
+repository = "https://github.com/programmablemike/spacer"
+publish = false
+
+# Native webview dependencies are separate from the portable CLI workspace.
+[workspace]
+
+[features]
+native-smoke = ["dep:serde_json"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+spacer-core = { path = "../../spacer-core" }
+spacer-data = { path = "../../spacer-data" }
+tauri = { version = "2", features = [] }
+tauri-plugin-dialog = "2"
+tauri-plugin-opener = "2"
+tauri-plugin-clipboard-manager = "2"
+serde = { version = "1", features = ["derive"] }
+serde_json = { version = "1", optional = true }
+
+[dev-dependencies]
+tempfile = "3"
+serde_json = "1"
