@@ -1,0 +1,37 @@
+# Spacer
+
+> A Rust CLI and read-only terminal browser for organizing local development projects into spaces.
+
+The current application tracks directories and change records in JSON. Git
+repository/worktree operations exist in the core library but are not integrated
+into the CLI or TUI. Starting or finishing a change only updates tracking.
+Workspace resolution uses SPACER_ROOT or the current directory, without ancestor
+search. The documentation describes the committed application behavior.
+
+## Documentation
+
+- [Documentation index](docs/README.md): Choose tutorials, how-to guides, reference, or explanation.
+
+## Tutorials
+
+- [Your first workspace](docs/tutorials/first-workspace.md): Guided exercise in an isolated workspace.
+
+## How-to guides
+
+- [Install from source](docs/how-to/install.md): Cargo and Nix installation, plus development builds.
+- [Set up navigation](docs/how-to/shell-navigation.md): bash, zsh, and sh wrappers and root configuration.
+- [Add an existing project](docs/how-to/existing-project.md): Track an existing directory without moving it.
+
+## Reference
+
+- [CLI](docs/reference/cli.md): Commands, arguments, effects, and TUI keys.
+- [Configuration](docs/reference/configuration.md): Environment precedence, JSON state, and persistence limitations.
+
+## Explanation
+
+- [Workspaces and adapters](docs/explanation/architecture.md): Domain hierarchy, code boundaries, and Git versus metadata behavior.
+
+## Optional
+
+- [Project overview](README.md): Repository entry point.
+- [License](LICENSE): MIT license terms.
