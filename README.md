@@ -1,184 +1,188 @@
+<p align="center">
+  <img src="logo.svg" alt="Spacer — a grid of blocks with one yellow block docking into place" width="640">
+</p>
+
 # Spacer
 
 [Documentation](docs/README.md) · [Documentation index for LLMs](llms.txt)
 
-![Spacer logo](logo.svg)
+Organize and navigate your local development projects from the command line.
+Spacer groups projects into spaces and provides a terminal browser for your
+workspace.
 
-Spacer is a command-line tool and TUI for managing multiple code projects. It's
-written in Rust to be blazing fast.
+**Status: early development.** The CLI currently creates directories and tracks
+spaces, projects, and changes in JSON. Git repository and worktree operations
+exist in the core library but are not connected to the CLI or TUI yet.
 
-## Table of Contents
+## Install from source
 
-- [Description](#description)
-- [Setup](#setup)
-- [Use Cases](#use-cases)
-  - [Initializing Spacer](#initializing-spacer)
-  - [Creating a new project](#creating-a-new-project)
-  - [Starting a new change](#starting-a-new-change)
-  - [Navigating between projects and changes](#navigating-between-projects-and-changes)
-- [Design](#design)
-- [License](#license)
-
-## Description
-
-Spacer is a command-line tool and TUI for managing multiple code projects.
-
-It does this by providing an opinionated layout of your workspace for your code
-and by integrating with code storage back ends (Git only right now) to retrieve,
-update and save changes.
-
-This tool operates in two separate modes: a command-line interface (CLI) for
-scripting and automation, and a terminal user interface (TUI) for interactive use.
-
-The CLI allows users to perform various operations on their projects, such as
-creating new projects, switching between projects, and managing changes. The TUI
-provides a visual interface for users to navigate through their projects and
-changes, making it easier to manage multiple projects simultaneously.
-
-## Setup
-
-After installing the `spacer` binary, add the shell integration to your shell's
-rc file so that `spacer space go` can change your working directory:
-
-**zsh** — add to `~/.zshrc`:
+You need a Rust toolchain with Cargo. From a checkout of this repository:
 
 ```sh
-eval "$(spacer shell)"
+cargo install --path . --locked
+spacer --help
 ```
 
-**bash** — add to `~/.bashrc`:
+Ensure Cargo's installation directory (usually `~/.cargo/bin`) is on your `PATH`.
+Git is needed for the core library's Git adapter and its integration tests.
+
+With Nix and flakes enabled, you can build and run from the checkout instead:
 
 ```sh
-eval "$(spacer shell bash)"
+nix build
+./result/bin/spacer --help
 ```
 
-**sh** — add to `~/.profile`:
+## Quickstart
+
+The examples below use a POSIX-compatible shell. Choose a workspace directory and
+export its absolute path so commands continue to find it after you change
+folders:
 
 ```sh
-eval "$(spacer shell sh)"
-```
-
-Then restart your shell or source the rc file:
-
-```sh
-source ~/.zshrc   # or ~/.bashrc, ~/.profile
-```
-
-This is required for the `spacer space go` and `spacer project go` commands to
-work, which change the current working directory to the selected space or
-project. Without this shell integration, these commands will not be able
-to change the directory in the parent shell.
-
-## Use Cases
-
-### Initializing Spacer
-
-Initialize Spacer in the current directory:
-
-```sh
+mkdir -p "$HOME/code"
+export SPACER_ROOT="$HOME/code"
 spacer workspace init
-```
 
-Or point Spacer at an existing directory without changing into it:
+spacer space create personal
+spacer space use personal
+spacer project create website
+spacer project use website
 
-```sh
-SPACER_ROOT=/path/to/code spacer workspace init
-```
-
-### Creating a new project
-
-Create a space, set it as the active context, then create a project inside it:
-
-```sh
-spacer space create my-org
-spacer space use my-org
-
-spacer project create my-repo
-```
-
-Without an active space, pass `--space` explicitly:
-
-```sh
-spacer project create my-repo --space my-org
-```
-
-List spaces and projects:
-
-```sh
 spacer space list
-# * my-org   /path/to/code/my-org
-
 spacer project list
-#   my-org   my-repo   /path/to/code/my-org/my-repo
 ```
 
-### Starting a new change
+This creates the following directories and saves the active space/project in
+`.spacer/config.json`:
 
-Start a change (creates a tracking entry for a branch or worktree):
+```text
+code/
+├── .spacer/
+│   └── config.json
+└── personal/
+    └── website/
+```
+
+`project create` creates a directory, not a Git repository. Initialize or clone
+repositories with Git separately.
+
+To track an existing project directory without moving it:
 
 ```sh
-spacer change start feature-x --project my-repo
+spacer project create existing-repo --space personal --path /absolute/path/to/repo
 ```
 
-List active changes:
+The path is recorded and the directory is created if missing. This command does
+not check whether the directory is a Git repository. Prefer absolute custom paths.
+
+## Navigate from your shell
+
+Without shell integration, `space go` and `project go` print directory paths.
+Load the wrapper to make them change your shell's current directory:
+
+| Shell | Add to your startup file |
+| --- | --- |
+| zsh (`~/.zshrc`) | `eval "$(spacer shell zsh)"` |
+| bash (`~/.bashrc`) | `eval "$(spacer shell bash)"` |
+| sh (`~/.profile`) | `eval "$(spacer shell sh)"` |
+
+Restart your shell or source the appropriate file, then run:
 
 ```sh
-spacer change list
-#   my-org   my-repo   feature-x
+spacer space go personal
+spacer project go website
 ```
 
-When the work is done, finish the change:
+Export `SPACER_ROOT` in your shell startup file as well if you want it to persist
+across sessions. Without it, Spacer uses the current directory as the workspace
+root; it does not search parent directories.
+
+## Track changes
+
+A change is currently a named tracking entry within a project:
 
 ```sh
-spacer change finish feature-x --project my-repo
+spacer change start feature-x --project website --space personal
+spacer change list --project website --space personal
+spacer change finish feature-x --project website --space personal
 ```
 
-> **Note:** `finish` removes the change from Spacer's tracking. It does not
-> delete the underlying git branch or worktree — that remains your responsibility.
+`start` adds an entry to the workspace configuration. It does not create a branch
+or worktree. `finish` removes that entry and leaves Git branches and files alone.
+Use Git directly to manage the underlying work for now.
 
-### Navigating between projects and changes
+## Browse the workspace
 
-Launch the TUI to browse spaces, projects, and changes interactively:
+Run `spacer` without arguments to open the read-only TUI:
 
 ```sh
 spacer
 ```
 
 | Key | Action |
-|---|---|
-| `Tab` | Switch between Spaces / Projects / Changes tabs |
-| `j` / `↓` | Move selection down |
-| `k` / `↑` | Move selection up |
+| --- | --- |
+| `Tab` | Switch between spaces, projects, and changes |
+| `j` / `↓` | Move down |
+| `k` / `↑` | Move up |
 | `q` / `Ctrl-C` | Quit |
 
-## Design
+The TUI displays a snapshot. Restart it to see changes made by other commands.
+It does not create objects or change the parent shell's directory.
 
-Spacer organises code into a four-level hierarchy:
+## Concepts and context
 
+| Concept | Current meaning |
+| --- | --- |
+| Workspace | Root directory containing `.spacer/config.json` |
+| Space | Named group of projects, usually an organization or personal collection |
+| Project | Named directory within a space, optionally at a custom path |
+| Change | Named record of work within a project |
+
+Commands use explicit names and flags when provided. Otherwise, supported
+commands use environment overrides followed by saved defaults:
+
+| Variable | Purpose |
+| --- | --- |
+| `SPACER_ROOT` | Workspace root; defaults to the current directory |
+| `SPACER_SPACE` | Overrides the saved active space when nonempty |
+| `SPACER_PROJECT` | Overrides the saved active project when nonempty |
+
+Use `spacer space current` and `spacer project current` to inspect selections.
+`change start` and `change finish` still require `--project` explicitly.
+For command details, run `spacer --help` or a subcommand's `--help`.
+
+## Current limitations
+
+- The CLI tracks metadata; Git automation is not integrated yet.
+- `space delete` and `project delete` remove tracking records, not directories.
+  They do not clean up child records or saved active selections. Finish tracked
+  changes before deleting a project, remove projects before deleting a space,
+  and select a remaining valid context afterward.
+- Configuration writes are not atomic or coordinated between processes. Avoid
+  simultaneous commands that modify the same workspace and back up
+  `.spacer/config.json` before significant changes.
+- Shell integration is provided for bash, zsh, and sh. Other shells can use the
+  paths printed by navigation commands with their own directory-changing syntax.
+
+## Development
+
+The Rust workspace contains the CLI/TUI in `src/` and domain types, storage, and
+Git adapters in `spacer-core/`. Nix and Flox development configurations are
+included in [flake.nix](flake.nix) and [.flox/env/manifest.toml](.flox/env/manifest.toml).
+
+With Rust, rustfmt, Clippy, and Git available:
+
+```sh
+cargo test --workspace --locked
+cargo fmt --all -- --check
+cargo clippy --workspace --all-targets --locked -- -D warnings
 ```
-workspace/                  ← root directory ($SPACER_ROOT)
-├── .spacer/
-│   └── config.json
-├── my-org/                 ← space
-│   ├── my-repo/            ← project
-│   │   ├── main/           ← change (git worktree)
-│   │   └── feature-branch/ ← change (git worktree)
-│   └── another-repo/
-└── another-org/
-    └── ...
-```
 
-| Concept | Analogous to | Description |
-|---|---|---|
-| **Workspace** | Local machine | The root directory where all code lives, set via `$SPACER_ROOT` |
-| **Space** | GitHub organisation | A named grouping of related projects |
-| **Project** | Git repository | A single codebase living inside a space |
-| **Change** | Git worktree | An isolated working directory for a branch or task within a project |
-
-The starting point is initializing a workspace with `spacer workspace init` in
-the desired root directory, or by setting the `SPACER_ROOT` environment variable.
-From there, spaces, projects, and changes can be created using the CLI or TUI.
+The visual identity represents organized project spaces: a four-by-four grid
+with one yellow block docking into place. [logo.svg](logo.svg) is the wordmark;
+[logo-icon.svg](logo-icon.svg) is the standalone icon. Both are self-contained SVGs.
 
 ## License
 
-MIT licensed. See [LICENSE](LICENSE) for more details.
+[MIT](LICENSE).
