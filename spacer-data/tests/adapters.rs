@@ -121,7 +121,7 @@ fn explicit_git_lifecycle_preserves_branch_and_dirty_worktree() {
     std::fs::write(&dirty, "keep").unwrap();
     assert!(matches!(
         ws.close_worktree("feat/login", "web", "alpha"),
-        Err(Error::Git(_))
+        Err(Error::InvalidOperation(_))
     ));
     assert!(dirty.exists());
     std::fs::remove_file(dirty).unwrap();
@@ -343,4 +343,80 @@ fn ambiguous_legacy_formats_are_rejected_without_writes() {
         std::fs::read_to_string(metadata.join("state.json")).unwrap(),
         "legacy"
     );
+}
+
+#[test]
+fn registration_is_read_only_and_rejects_linked_bare_and_nonrepositories() {
+    let tmp = tempfile::tempdir().unwrap();
+    let external = tempfile::tempdir().unwrap();
+    git(external.path(), &["init"]);
+    git(
+        external.path(),
+        &["commit", "--allow-empty", "-m", "initial"],
+    );
+    let mut ws = workspace(tmp.path());
+    ws.create_space("alpha", None).unwrap();
+    assert!(ws
+        .create_git_project("existing", "alpha", Some(external.path().into()))
+        .is_err());
+    ws.register_project("external", "alpha", external.path().into())
+        .unwrap();
+    assert_eq!(
+        git(external.path(), &["rev-list", "--count", "HEAD"]).trim(),
+        "1"
+    );
+    let tree = ws
+        .start_worktree("feature", "external", "alpha", "HEAD")
+        .unwrap();
+    assert!(tree.path.starts_with(
+        tmp.path()
+            .canonicalize()
+            .unwrap()
+            .join(".spacer/worktrees/alpha/external")
+    ));
+    assert!(ws.register_project("linked", "alpha", tree.path).is_err());
+    assert!(ws
+        .register_project("ordinary", "alpha", tmp.path().into())
+        .is_err());
+    let bare = tmp.path().join("bare");
+    git(tmp.path(), &["init", "--bare", bare.to_str().unwrap()]);
+    assert!(ws.register_project("bare", "alpha", bare).is_err());
+    ws.delete_project("external", "alpha").unwrap();
+    assert!(external.path().join(".git").exists());
+    assert!(git(external.path(), &["worktree", "list"]).contains("feature"));
+}
+
+#[test]
+fn finish_preserves_ignored_locked_and_unmerged_work() {
+    let tmp = tempfile::tempdir().unwrap();
+    let mut ws = workspace(tmp.path());
+    ws.create_space("alpha", None).unwrap();
+    let p = ws.create_git_project("web", "alpha", None).unwrap();
+    git(&p.path, &["commit", "--allow-empty", "-m", "initial"]);
+    let tree = ws
+        .start_worktree("feature", "web", "alpha", "HEAD")
+        .unwrap();
+    std::fs::write(tree.path.join(".gitignore"), "ignored\n").unwrap();
+    git(&tree.path, &["add", ".gitignore"]);
+    git(&tree.path, &["commit", "-m", "unmerged work"]);
+    std::fs::write(tree.path.join("ignored"), "keep").unwrap();
+    assert!(ws.close_worktree("feature", "web", "alpha").is_err());
+    assert_eq!(
+        std::fs::read_to_string(tree.path.join("ignored")).unwrap(),
+        "keep"
+    );
+    std::fs::remove_file(tree.path.join("ignored")).unwrap();
+    git(&p.path, &["worktree", "lock", tree.path.to_str().unwrap()]);
+    assert!(ws.close_worktree("feature", "web", "alpha").is_err());
+    assert!(tree.path.is_dir());
+    git(
+        &p.path,
+        &["worktree", "unlock", tree.path.to_str().unwrap()],
+    );
+    ws.close_worktree("feature", "web", "alpha").unwrap();
+    assert_eq!(
+        git(&p.path, &["rev-list", "--count", "feature"]).trim(),
+        "2"
+    );
+    assert!(!tree.path.exists());
 }

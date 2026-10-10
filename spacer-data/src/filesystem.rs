@@ -4,6 +4,31 @@ use std::path::{Component, Path, PathBuf};
 #[derive(Default)]
 pub struct LocalFilesystem;
 impl Filesystem for LocalFilesystem {
+    fn is_empty_or_missing(&self, path: &Path) -> Result<bool> {
+        match std::fs::read_dir(path) {
+            Ok(mut entries) => entries
+                .next()
+                .transpose()
+                .map(|entry| entry.is_none())
+                .map_err(|e| Error::Filesystem(e.to_string())),
+            Err(e) if e.kind() == std::io::ErrorKind::NotFound => Ok(true),
+            Err(e) => Err(Error::Filesystem(format!(
+                "cannot inspect '{}': {e}",
+                path.display()
+            ))),
+        }
+    }
+    fn is_dir(&self, path: &Path) -> Result<bool> {
+        match std::fs::metadata(path) {
+            Ok(metadata) => Ok(metadata.is_dir()),
+            Err(e) if e.kind() == std::io::ErrorKind::NotFound => Ok(false),
+            Err(e) => Err(Error::Filesystem(format!(
+                "cannot inspect '{}': {e}",
+                path.display()
+            ))),
+        }
+    }
+
     fn normalize(&self, path: &Path) -> Result<PathBuf> {
         if path.as_os_str().is_empty() {
             return Err(Error::InvalidOperation("path must not be empty".into()));

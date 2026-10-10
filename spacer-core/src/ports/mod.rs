@@ -10,12 +10,16 @@ pub trait Registry: Send + Sync {
 
 /// Directory effects needed by workspace use cases. Deliberately has no recursive delete.
 pub trait Filesystem: Send + Sync {
+    fn is_empty_or_missing(&self, path: &Path) -> Result<bool>;
+    fn is_dir(&self, path: &Path) -> Result<bool>;
     fn normalize(&self, path: &Path) -> Result<PathBuf>;
     fn create_dir_all(&self, path: &Path) -> Result<()>;
 }
 
 /// Git mechanisms, independent of registration and active context.
 pub trait Git: Send + Sync {
+    fn validate_repository(&self, repository: &Path) -> Result<()>;
+    fn is_clean(&self, worktree: &Path) -> Result<bool>;
     fn initialize(&self, repository: &Path) -> Result<()>;
     fn add_worktree(&self, repository: &Path, branch: &str, path: &Path, base: &str) -> Result<()>;
     fn worktrees(&self, repository: &Path) -> Result<Vec<Worktree>>;

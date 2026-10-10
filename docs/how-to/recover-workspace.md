@@ -37,3 +37,10 @@ read as configuration; never remove `registry.lock` while a process is running.
 
 Invalid relationships or names require repair of the identified record. Stale
 saved selections clear in memory and persist on the next successful mutation.
+
+Git worktree start requires an existing commit and a new branch. If Git reports
+a partial failure, inspect `git worktree list` and the named branch before
+retrying; Spacer does not reset branches or prune worktrees automatically. Finish
+refuses modified, untracked, ignored-file-containing, locked, or primary checkouts.
+A clean worktree can be closed with unmerged commits because its branch remains.
+Avoid editing a checkout concurrently with finishing it.

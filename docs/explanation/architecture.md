@@ -59,7 +59,8 @@ these types separate avoids claiming that a metadata entry is a real checkout.
 
 The service exposes concrete use cases rather than selecting a backend with
 implicit side effects. `create_project` creates a directory and record;
-`create_git_project` explicitly also initializes Git. Likewise `start_change`
+`create_git_project` explicitly initializes Git in a new/empty directory, while
+`register_project` validates an existing primary non-bare repository. Likewise `start_change`
 and `finish_change` manage tracking, while `start_worktree` and `close_worktree`
 operate on real checkouts. CLI commands continue to use the tracking operations.
 
