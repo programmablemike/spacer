@@ -9,8 +9,6 @@
   branch or merge changes without authorization.
 - Preserve unrelated staged, unstaged, and untracked files. Stage only the files
   belonging to the task; review the staged diff before committing.
-- Keep `ALPHA_CHECKLIST.md` and `docs/alpha-contract.md` local and untracked. They
-  are temporary planning documents and must not be included in commits or PRs.
 - Keep changes focused and follow the existing architecture and dependencies.
 - Never include credentials, tokens, private keys, or other secrets in source,
   logs, prompts, or generated artifacts.
