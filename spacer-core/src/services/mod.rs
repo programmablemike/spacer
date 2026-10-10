@@ -26,6 +26,12 @@ impl Workspace {
         let root = filesystem.normalize(&root)?;
         let mut state = registry.load()?;
         validation::validate_state(&state)?;
+        let mut project_paths = std::collections::HashSet::new();
+        for project in &state.projects {
+            if !project_paths.insert(filesystem.normalize(&project.path)?) {
+                return Err(Error::InvalidOperation("duplicate canonical project paths in registry; back up and reconcile registrations before continuing".into()));
+            }
+        }
         // Legacy stale defaults are cleared in memory; opening never writes storage.
         validation::clear_stale_context(&mut state);
         let mut context = context;

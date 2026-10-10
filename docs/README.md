@@ -29,3 +29,5 @@ behavior. Explanation discusses concepts and design choices.
 Keep examples aligned with implemented commands and describe observable outcomes.
 Use relative links between pages, link back to this index, and update `llms.txt`
 when adding or moving documentation. Verify examples in an isolated workspace.
+
+- [Recover an existing workspace](how-to/recover-workspace.md)

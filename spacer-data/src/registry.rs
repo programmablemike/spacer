@@ -24,6 +24,14 @@ impl JsonRegistry {
 impl Registry for JsonRegistry {
     fn load(&self) -> Result<WorkspaceSnapshot> {
         let path = self.path();
+        if self
+            .root
+            .join(".spacer/state.json")
+            .try_exists()
+            .map_err(|e| persistence(&path, e))?
+        {
+            return Err(persistence(&path, "legacy state.json requires manual reconciliation; back up both files and see docs/how-to/recover-workspace.md before archiving state.json"));
+        }
         let mut baseline = self
             .baseline
             .lock()
@@ -38,6 +46,11 @@ impl Registry for JsonRegistry {
                     &path,
                     "unsupported schema version; upgrade Spacer without modifying this file",
                 ));
+            }
+            if config.spaces.iter().any(|s| !s.path.is_absolute())
+                || config.projects.iter().any(|p| !p.path.is_absolute())
+            {
+                return Err(persistence(&path, "relative legacy paths are ambiguous; back up configuration and replace them with verified absolute paths before retrying"));
             }
             config.into()
         } else {
@@ -155,6 +168,7 @@ impl From<WorkspaceSnapshot> for StoredConfig {
 }
 
 #[derive(Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 struct StoredSpace {
     name: String,
     path: PathBuf,
@@ -177,6 +191,7 @@ impl From<Space> for StoredSpace {
 }
 
 #[derive(Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 struct StoredProject {
     name: String,
     space: String,
@@ -202,6 +217,7 @@ impl From<Project> for StoredProject {
 }
 
 #[derive(Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 struct StoredChange {
     name: String,
     project: String,

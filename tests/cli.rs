@@ -118,9 +118,13 @@ fn malformed_relationships_do_not_rewrite_configuration() {
     let root = tmp.path();
     std::fs::create_dir(root.join(".spacer")).unwrap();
     let path = root.join(".spacer/config.json");
-    let data =
-        r#"{"spaces":[],"projects":[{"name":"web","space":"missing","path":"keep"}],"changes":[]}"#;
-    std::fs::write(&path, data).unwrap();
+    let data = r#"{"spaces":[],"projects":[{"name":"web","space":"missing","path":"/keep"}],"changes":[]}"#;
+    let data = if cfg!(windows) {
+        data.replace("/keep", "C:/keep")
+    } else {
+        data.to_owned()
+    };
+    std::fs::write(&path, &data).unwrap();
     let result = cli(root, &["space", "create", "new"]);
     assert!(!result.status.success());
     assert!(String::from_utf8_lossy(&result.stderr).contains("missing space"));

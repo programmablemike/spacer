@@ -101,8 +101,7 @@ next release decision.
 | `ws.config()` / `ws.save()` | `ws.snapshot()` / automatic persistence in mutating use cases |
 
 The CLI still reads/writes `.spacer/config.json` in its existing format. The old
-Git backend's `.spacer/state.json` and directory-scanning registration are not
-used or migrated. Those files are left untouched; library callers must explicitly
+Git backend's `.spacer/state.json` and directory-scanning registration require explicit reconciliation. See [recovery](../how-to/recover-workspace.md). Those files are left untouched; library callers must explicitly
 register projects through the service. There is no recursive project deletion in
 the new ports or service.
 
