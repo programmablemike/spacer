@@ -1,5 +1,5 @@
 {
-  description = "A CLI and TUI tool for managing multiple code projects";
+  description = "CLI and desktop tools for managing projects and Git worktrees";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
@@ -30,13 +30,25 @@
 
         spacer = craneLib.buildPackage (commonArgs // {
           inherit cargoArtifacts;
+          nativeBuildInputs = [ pkgs.makeBinaryWrapper ];
+          postInstall = ''
+            wrapProgram "$out/bin/spacer" --prefix PATH : ${pkgs.lib.makeBinPath [ pkgs.git ]}
+          '';
+          meta.mainProgram = "spacer";
         });
+        desktop = pkgs.callPackage ./nix/desktop.nix { };
       in
       {
-        packages.default = spacer;
+        packages = {
+          default = spacer;
+          cli = spacer;
+          inherit desktop;
+        };
 
         checks = {
           inherit spacer;
+          inherit desktop;
+          desktop-smoke = desktop.override { nativeSmoke = true; };
 
           spacer-clippy = craneLib.cargoClippy (commonArgs // {
             inherit cargoArtifacts;
@@ -52,7 +64,7 @@
         };
 
         devShells.default = craneLib.devShell {
-          checks = self.checks.${system};
+          checks = builtins.removeAttrs self.checks.${system} [ "desktop" "desktop-smoke" ];
         };
       }
     );

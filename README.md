@@ -44,12 +44,16 @@ spacer --help
 Ensure Cargo's installation directory (usually `~/.cargo/bin`) is on your `PATH`.
 Configure your own Git commit identity before making the tutorial's first commit.
 
-With Nix and flakes enabled, you can build and run from the checkout instead:
+With Nix and flakes enabled, build either presentation from the checkout:
 
 ```sh
-nix build
+nix build .#cli
 ./result/bin/spacer --help
+nix build .#desktop --out-link result-desktop
 ```
+
+`default` remains an alias for `cli`. See [Nix installation](docs/how-to/nix.md)
+for Home Manager, nix-darwin, application registration, and updates.
 
 ## Quickstart
 

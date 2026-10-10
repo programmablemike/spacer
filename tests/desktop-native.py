@@ -1,12 +1,16 @@
 """Run a feature-gated native webview lifecycle in an isolated workspace."""
+import argparse
 import json
 import os
 import pathlib
 import subprocess
-import sys
 import tempfile
 
-binary = pathlib.Path(sys.argv[1]).resolve()
+parser = argparse.ArgumentParser(description=__doc__)
+parser.add_argument("binary", type=pathlib.Path)
+parser.add_argument("--empty-path", action="store_true", help="verify the package supplies runtime tools")
+args = parser.parse_args()
+binary = args.binary.resolve()
 with tempfile.TemporaryDirectory(prefix="spacer native ") as directory:
     root = pathlib.Path(directory)
     env = dict(os.environ)
@@ -19,7 +23,8 @@ with tempfile.TemporaryDirectory(prefix="spacer native ") as directory:
     subprocess.run(["git", "-C", str(repository), "-c", "user.name=Test", "-c", "user.email=test@example.invalid",
                     "-c", "commit.gpgsign=false", "commit", "--allow-empty", "-m", "Initial"],
                    env=env, check=True, capture_output=True)
-    result = subprocess.run([str(binary)], env=env, capture_output=True, text=True, timeout=90)
+    binary_env = dict(env, PATH="") if args.empty_path else env
+    result = subprocess.run([str(binary)], env=binary_env, capture_output=True, text=True, timeout=90)
     assert result.returncode == 0 and '"success":true' in result.stdout, (result.stdout, result.stderr)
     assert (repository / ".git").is_dir()
     registry = json.loads((root / ".spacer/config.json").read_text())

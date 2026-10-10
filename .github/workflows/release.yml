@@ -9,8 +9,10 @@ jobs:
     uses: ./.github/workflows/ci.yml
   desktop:
     uses: ./.github/workflows/desktop.yml
+  nix:
+    uses: ./.github/workflows/nix.yml
   publish:
-    needs: [quality, desktop]
+    needs: [quality, desktop, nix]
     runs-on: ubuntu-24.04
     permissions:
       contents: write
