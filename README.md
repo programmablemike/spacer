@@ -159,9 +159,9 @@ For command details, run `spacer --help` or a subcommand's `--help`.
   They refuse removal while tracked children remain and clear affected saved
   selections. Finish tracked changes before removing a project, and remove
   projects before removing a space.
-- Configuration writes are not atomic or coordinated between processes. Avoid
-  simultaneous commands that modify the same workspace and back up
-  `.spacer/config.json` before significant changes.
+- Configuration writes are atomic and detect concurrent changes. Retry a
+  conflicting command after reopening the workspace; back up metadata before
+  manual edits.
 - Shell integration is provided for bash, zsh, and sh. Other shells can use the
   paths printed by navigation commands with their own directory-changing syntax.
 

@@ -44,12 +44,13 @@ The CLI and TUI use `<root>/.spacer/config.json`. Example with an absolute root:
 
 The three arrays are required on deserialization. Active selections are optional
 and omitted when unset. Projects are identified by name and space; changes by
-name, project, and space. The two active fields jointly identify the selected project. There is no schema
-version or migration mechanism.
+name, project, and space. The two active fields jointly identify the selected project. Schema version 1 is written on successful mutation. Unversioned configurations
+are read as legacy version 0; future versions and unknown top-level fields are
+rejected without rewriting them.
 
 Missing configuration loads as empty state. Mutation followed by save creates
 metadata as needed, even without an explicit init. Invalid JSON is an error.
-`workspace init` loads configuration first, then checks for `.spacer` existence.
+`workspace init` loads configuration first, then checks for `config.json` existence.
 Malformed data is reported without being overwritten.
 
 ## Invariants and recovery
@@ -74,8 +75,11 @@ Spacer does not discard orphaned records automatically.
 
 ## Persistence limits
 
-Writes replace the file directly, without atomic replacement or locking. Avoid
-concurrent mutating commands and keep a backup before significant edits.
+Writes use a flushed temporary file and atomic replacement under an OS file
+lock. A byte-for-byte comparison with the loaded configuration rejects stale
+writes: reopen and retry after a conflict. The lock is released on process exit;
+do not delete `registry.lock` while Spacer is running. Interrupted temporary
+files are ignored. Back up configuration before manual edits.
 There is no separate command to clear saved context.
 
 Custom paths can point outside the root. Path normalization, symlink containment, and canonical repository uniqueness

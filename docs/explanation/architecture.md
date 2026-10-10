@@ -81,7 +81,7 @@ than guessing a directory from a branch name. The filesystem port deliberately
 has no recursive-delete operation.
 
 All ports are `Send + Sync`, so their implementations can be used by threaded
-presentations. This does not make registry writes atomic or concurrency-safe.
+presentations. The JSON adapter uses atomic replacement and optimistic concurrency checks.
 The ports are synchronous; a future GUI must schedule blocking I/O off its UI
 thread and serialize access to a mutable service instance.
 
@@ -109,8 +109,7 @@ checkout refusal, and external worktree paths. CLI tests spawn the binary to
 verify composition, persistence between invocations, and environment precedence.
 
 The existing JSON schema and metadata-based CLI behavior are preserved. Known
-limitations remain: non-atomic configuration writes, no cross-process locking,
-no ancestor discovery, and incomplete path normalization/containment. Removing
+limitations remain: no ancestor discovery, and incomplete path normalization/containment. Removing
 parents with tracked children is rejected; affected saved context is cleared. The architecture makes those policies central rather than fixing
 all of them as part of the structural refactor.
 
