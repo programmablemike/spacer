@@ -210,6 +210,9 @@ struct FakeFilesystem {
     fail: bool,
 }
 impl Filesystem for FakeFilesystem {
+    fn normalize(&self, path: &Path) -> Result<PathBuf> {
+        Ok(path.into())
+    }
     fn create_dir_all(&self, path: &Path) -> Result<()> {
         if self.fail {
             return Err(Error::Filesystem("injected directory failure".into()));

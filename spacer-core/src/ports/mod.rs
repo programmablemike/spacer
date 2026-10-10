@@ -1,5 +1,5 @@
 use crate::{Result, WorkspaceSnapshot, Worktree};
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 /// Persists domain data. Implementations do not enforce lifecycle policy.
 pub trait Registry: Send + Sync {
@@ -10,6 +10,7 @@ pub trait Registry: Send + Sync {
 
 /// Directory effects needed by workspace use cases. Deliberately has no recursive delete.
 pub trait Filesystem: Send + Sync {
+    fn normalize(&self, path: &Path) -> Result<PathBuf>;
     fn create_dir_all(&self, path: &Path) -> Result<()>;
 }
 
