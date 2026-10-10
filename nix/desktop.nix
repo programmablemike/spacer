@@ -27,7 +27,7 @@ rustPlatform.buildRustPackage {
     openssl webkitgtk_4_1 gtk3 librsvg
   ];
   nativeCheckInputs = [ git ];
-  cargoBuildFeatures = lib.optional nativeSmoke "native-smoke";
+  buildFeatures = lib.optional nativeSmoke "native-smoke";
   # The frontend is built in its own sandboxed derivation. Signing credentials
   # and conventional installer generation do not belong in this Nix package.
   postPatch = ''
