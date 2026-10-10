@@ -1,19 +1,24 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="640" height="160" viewBox="0 0 640 160" role="img" aria-labelledby="title desc">
   <title id="title">Spacer</title>
-  <desc id="desc">An Asteroids-inspired vector ship and rock beside the Spacer wordmark.</desc>
-  <rect width="640" height="160" rx="16" fill="#111923"/>
+  <desc id="desc">A white vector spaceship firing at a jagged asteroid beside the Spacer wordmark on black.</desc>
+  <rect width="640" height="160" rx="16" fill="#101112"/>
   <g transform="translate(16 16)">
-  <g fill="none" stroke-linecap="round" stroke-linejoin="round">
-    <!-- Angular rock and ship recall early vector arcade games. -->
-    <path d="M87 24 105 32 109 49 99 62 82 59 73 45 77 31Z"
-          stroke="#8494a7" stroke-width="2.5"/>
-    <path d="M65 51 37 99 39 77 18 70Z"
-          stroke="#70e0cf" stroke-width="3"/>
-    <path d="m29 87-8 9" stroke="#70e0cf" stroke-width="2.5"/>
+  <g fill="none" stroke="#f3f3eb" stroke-width="2.5" stroke-linejoin="miter">
+    <!-- Irregular, concave silhouette evokes a vector-arcade asteroid. -->
+    <path d="m70 16 22-5 18 14-8 12 11 13-19 14-12-12-16 6-9-20 13-9-8-7Z"/>
+    <!-- Narrow triangular hull, inset stern, and separate engine flame. -->
+    <g transform="translate(36 89) rotate(42)">
+      <path d="M0-23-14 14 0 8 14 14Z"/>
+      <path d="m-6 15 6 13 6-13" stroke-width="2"/>
+    </g>
+  </g>
+  <g fill="#f3f3eb">
+    <circle cx="57" cy="66" r="1.7"/>
+    <circle cx="62" cy="61" r="1.7"/>
   </g>
   </g>
   <!-- Outlined letterforms render consistently without external fonts. -->
-  <g transform="translate(174 54)" fill="none" stroke="#edf2f7" stroke-width="3" stroke-linecap="square" stroke-linejoin="miter">
+  <g transform="translate(174 54)" fill="none" stroke="#f3f3eb" stroke-width="3" stroke-linecap="square" stroke-linejoin="miter">
     <path d="M42 0H8L0 8V18L8 26H34L42 34V44L34 52H0"/>
     <path d="M68 52V0H102L110 8V22L102 30H68"/>
     <path d="m136 52 21-52 21 52m-34-18h26"/>
