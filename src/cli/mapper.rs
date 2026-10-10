@@ -142,7 +142,10 @@ mod tests {
         let projects = [make_project("web", "alpha")];
         let refs: Vec<&Project> = projects.iter().collect();
         let rows = project_rows(&refs, None);
-        assert_eq!(rows[0].path, "alpha/web");
+        assert_eq!(
+            rows[0].path,
+            PathBuf::from("alpha").join("web").display().to_string()
+        );
     }
 
     #[test]

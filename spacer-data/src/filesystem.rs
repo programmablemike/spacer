@@ -43,6 +43,7 @@ impl Filesystem for LocalFilesystem {
         let mut result = PathBuf::new();
         for part in absolute.components() {
             match part {
+                Component::Prefix(prefix) => result.push(prefix.as_os_str()),
                 Component::CurDir => {}
                 Component::ParentDir => {
                     result.pop();

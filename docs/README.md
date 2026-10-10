@@ -31,3 +31,5 @@ Use relative links between pages, link back to this index, and update `llms.txt`
 when adding or moving documentation. Verify examples in an isolated workspace.
 
 - [Recover an existing workspace](how-to/recover-workspace.md)
+
+- [Verify a release](how-to/verify-release.md)

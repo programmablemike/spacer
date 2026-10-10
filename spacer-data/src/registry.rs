@@ -84,6 +84,7 @@ impl Registry for JsonRegistry {
                 format!("another writer is active; retry the command: {e}"),
             )
         })?;
+        let _guard = RegistryLock(lock);
         if &read_config(&path)? != expected {
             return Err(persistence(
                 &path,
@@ -239,5 +240,42 @@ impl From<Change> for StoredChange {
             project: value.project,
             space: value.space,
         }
+    }
+}
+
+// Explicit unlock also releases a descriptor briefly inherited by a concurrent
+// fork before exec closes it. Closing only the parent descriptor is insufficient.
+struct RegistryLock(std::fs::File);
+impl Drop for RegistryLock {
+    fn drop(&mut self) {
+        let _ = self.0.unlock();
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn unlocks_even_when_another_descriptor_remains_open() {
+        let directory = tempfile::tempdir().unwrap();
+        let path = directory.path().join("lock");
+        let file = OpenOptions::new()
+            .read(true)
+            .write(true)
+            .create(true)
+            .truncate(false)
+            .open(&path)
+            .unwrap();
+        file.try_lock().unwrap();
+        let inherited = file.try_clone().unwrap();
+        drop(RegistryLock(file));
+        let other = OpenOptions::new()
+            .read(true)
+            .write(true)
+            .open(path)
+            .unwrap();
+        other.try_lock().unwrap();
+        other.unlock().unwrap();
+        drop(inherited);
     }
 }

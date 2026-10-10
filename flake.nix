@@ -18,7 +18,7 @@
         commonArgs = {
           inherit src;
           strictDeps = true;
-          nativeCheckInputs = [ pkgs.git ];
+          nativeCheckInputs = [ pkgs.git pkgs.bash pkgs.zsh ];
           # libiconv is required by Rust crates on Darwin
           buildInputs = pkgs.lib.optionals pkgs.stdenv.isDarwin [
             pkgs.libiconv

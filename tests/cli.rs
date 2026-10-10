@@ -326,6 +326,7 @@ fn shell_wrappers_preserve_cwd_and_failure_status() {
             .arg("-c")
             .arg(
                 r#"
+            export PATH="$SPACER_TEST_PATH"
             eval "$(command spacer shell integration sh)" || exit 10
             spacer go 'space with spaces' || exit 11
             before=$PWD
@@ -337,6 +338,7 @@ fn shell_wrappers_preserve_cwd_and_failure_status() {
         "#,
             )
             .env("PATH", &path)
+            .env("SPACER_TEST_PATH", &path)
             .env("SPACER_ROOT", root)
             .env_remove("SPACER_SPACE")
             .env_remove("SPACER_PROJECT")

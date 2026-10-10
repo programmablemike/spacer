@@ -46,7 +46,7 @@ with tempfile.TemporaryDirectory(prefix="spacer terminal '") as directory:
             if process.poll() is None:
                 process.kill()
                 raise AssertionError(f"terminal process timed out: {output!r}")
-            assert process.wait() == expected, output.decode(errors="replace")
+            assert process.wait() == expected, f"{args}: exit {process.returncode}, expected {expected}: " + output.decode(errors="replace")
             after = termios.tcgetattr(slave)
             # PENDIN is a kernel retype-pending flag, not a persistent terminal mode.
             after[3] &= ~getattr(termios, "PENDIN", 0)
@@ -61,7 +61,7 @@ with tempfile.TemporaryDirectory(prefix="spacer terminal '") as directory:
             os.close(slave)
 
     for shell in ("bash", "zsh", "sh"):
-        path = shutil.which(shell)
+        path = "/bin/bash" if shell == "bash" and sys.platform == "darwin" else shutil.which(shell)
         if not path:
             continue
         rc = '[ "$SPACER_RC_TEST" = loaded ] || exit 31; ' if shell != "sh" else ""

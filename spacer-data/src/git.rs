@@ -83,7 +83,7 @@ impl Git for GitCli {
                 "-b".as_ref(),
                 branch.as_ref(),
                 "--".as_ref(),
-                path.as_os_str(),
+                git_path(&path).as_os_str(),
                 base.as_ref(),
             ],
         )
@@ -107,11 +107,37 @@ impl Git for GitCli {
                 "worktree".as_ref(),
                 "remove".as_ref(),
                 "--".as_ref(),
-                path.as_os_str(),
+                git_path(path).as_os_str(),
             ],
         )
         .map(|_| ())
     }
+}
+// Git for Windows does not accept Rust's canonical verbatim path prefix.
+fn git_path(path: &Path) -> PathBuf {
+    #[cfg(windows)]
+    {
+        use std::path::{Component, Prefix};
+        let mut parts = path.components();
+        if let Some(Component::Prefix(prefix)) = parts.next() {
+            match prefix.kind() {
+                Prefix::VerbatimDisk(drive) => {
+                    let mut result = PathBuf::from(format!("{}:", char::from(drive)));
+                    result.push(parts.as_path());
+                    return result;
+                }
+                Prefix::VerbatimUNC(server, share) => {
+                    let mut result = PathBuf::from(r"\\");
+                    result.push(server);
+                    result.push(share);
+                    result.push(parts.as_path());
+                    return result;
+                }
+                _ => {}
+            }
+        }
+    }
+    path.to_path_buf()
 }
 fn run(cwd: &Path, args: &[&OsStr]) -> Result<Vec<u8>> {
     let output = Command::new("git")
@@ -170,6 +196,18 @@ fn path_from_bytes(bytes: &[u8]) -> Result<PathBuf> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[cfg(windows)]
+    #[test]
+    fn converts_canonical_paths_for_git() {
+        assert_eq!(
+            git_path(Path::new(r"\\?\C:\work\feature")),
+            PathBuf::from(r"C:\work\feature")
+        );
+        assert_eq!(
+            git_path(Path::new(r"\\?\UNC\server\share\feature")),
+            PathBuf::from(r"\\server\share\feature")
+        );
+    }
     #[test]
     fn parses_actual_paths_and_detached_worktrees() {
         let trees = parse_worktrees(b"worktree /main\0HEAD abc\0branch refs/heads/main\0\0worktree /elsewhere/a path\0HEAD abc\0branch refs/heads/feature\0\0worktree /detached\0detached\0\0").unwrap();
