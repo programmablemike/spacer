@@ -708,16 +708,22 @@ dependencies = [
  "crossterm",
  "ratatui",
  "spacer-core",
+ "spacer-data",
  "tabled",
+ "tempfile",
 ]
 
 [[package]]
 name = "spacer-core"
 version = "0.1.0"
+
+[[package]]
+name = "spacer-data"
+version = "0.1.0"
 dependencies = [
- "anyhow",
  "serde",
  "serde_json",
+ "spacer-core",
  "tempfile",
 ]
 

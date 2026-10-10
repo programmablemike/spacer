@@ -1,25 +1,9 @@
-use anyhow::{Context, Result};
-use std::path::PathBuf;
+//! Framework-independent domain model, application services, and outbound ports.
+pub mod error;
+pub mod model;
+pub mod ports;
+pub mod services;
 
-mod adapters;
-mod change;
-mod project;
-mod space;
-mod workspace;
-pub mod store;
-
-pub use adapters::config::Config;
-pub use adapters::{ConfigAdapter, GitAdapter, MemoryAdapter};
-pub use change::Change;
-pub use project::Project;
-pub use space::Space;
-pub use store::{Backend, ChangeStore, ProjectStore, SpaceStore};
-pub use workspace::Workspace;
-
-/// Returns the default Spacer root: `$SPACER_ROOT` env var or the current directory.
-pub fn default_root() -> Result<PathBuf> {
-    if let Ok(root) = std::env::var("SPACER_ROOT") {
-        return Ok(PathBuf::from(root));
-    }
-    std::env::current_dir().context("failed to determine current directory")
-}
+pub use error::{Error, Result};
+pub use model::{Change, ContextOverrides, Project, Space, WorkspaceSnapshot, Worktree};
+pub use services::Workspace;

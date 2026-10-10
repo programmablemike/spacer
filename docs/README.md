@@ -15,7 +15,8 @@ you need below. Commands describe the implementation in this repository.
 | Track a directory that already exists | [Add an existing project](how-to/existing-project.md) |
 | Look up commands | [CLI reference](reference/cli.md) |
 | Look up state, defaults, and constraints | [Configuration reference](reference/configuration.md) |
-| Understand the design | [Workspaces and adapters](explanation/architecture.md) |
+| Look up the Rust API and migration | [Rust API](reference/rust-api.md) |
+| Understand the design | [Hexagonal architecture](explanation/architecture.md) |
 
 For a compact machine-readable documentation index, see [llms.txt](../llms.txt).
 

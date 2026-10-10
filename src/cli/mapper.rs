@@ -45,7 +45,11 @@ pub fn space_rows(spaces: &[Space], active: Option<&str>) -> Vec<SpaceRow> {
     spaces
         .iter()
         .map(|s| SpaceRow {
-            active: if active == Some(s.name.as_str()) { '*' } else { ' ' },
+            active: if active == Some(s.name.as_str()) {
+                '*'
+            } else {
+                ' '
+            },
             name: s.name.clone(),
             path: s.path.display().to_string(),
         })
@@ -56,7 +60,11 @@ pub fn project_rows(projects: &[&Project], active: Option<&str>) -> Vec<ProjectR
     projects
         .iter()
         .map(|p| ProjectRow {
-            active: if active == Some(p.name.as_str()) { '*' } else { ' ' },
+            active: if active == Some(p.name.as_str()) {
+                '*'
+            } else {
+                ' '
+            },
             space: p.space.clone(),
             name: p.name.clone(),
             path: p.path.display().to_string(),
@@ -81,7 +89,10 @@ mod tests {
     use std::path::PathBuf;
 
     fn make_space(name: &str) -> Space {
-        Space { name: name.to_string(), path: PathBuf::from(name) }
+        Space {
+            name: name.to_string(),
+            path: PathBuf::from(name),
+        }
     }
 
     fn make_project(name: &str, space: &str) -> Project {
@@ -119,7 +130,7 @@ mod tests {
 
     #[test]
     fn project_rows_marks_active() {
-        let projects = vec![make_project("web", "alpha"), make_project("api", "alpha")];
+        let projects = [make_project("web", "alpha"), make_project("api", "alpha")];
         let refs: Vec<&Project> = projects.iter().collect();
         let rows = project_rows(&refs, Some("web"));
         assert_eq!(rows[0].active, '*');
@@ -128,7 +139,7 @@ mod tests {
 
     #[test]
     fn project_rows_path_matches() {
-        let projects = vec![make_project("web", "alpha")];
+        let projects = [make_project("web", "alpha")];
         let refs: Vec<&Project> = projects.iter().collect();
         let rows = project_rows(&refs, None);
         assert_eq!(rows[0].path, "alpha/web");
@@ -136,7 +147,7 @@ mod tests {
 
     #[test]
     fn change_rows_fields() {
-        let changes = vec![make_change("feat/login", "web", "alpha")];
+        let changes = [make_change("feat/login", "web", "alpha")];
         let refs: Vec<&Change> = changes.iter().collect();
         let rows = change_rows(&refs);
         assert_eq!(rows[0].name, "feat/login");

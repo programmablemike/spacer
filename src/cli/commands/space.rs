@@ -1,8 +1,8 @@
 use anyhow::Result;
 use clap::{Args, Subcommand};
 use std::path::PathBuf;
-use tabled::{Table};
 use tabled::settings::Style;
+use tabled::Table;
 
 use crate::cli::mapper;
 
@@ -43,14 +43,10 @@ pub enum SpaceCommands {
     },
 }
 
-pub fn run(args: SpaceArgs) -> Result<()> {
-    let root = spacer_core::default_root()?;
-    let mut ws = spacer_core::Workspace::open(&root)?;
-
+pub fn run(args: SpaceArgs, ws: &mut spacer_core::Workspace) -> Result<()> {
     match args.command {
         SpaceCommands::Create { name, path } => {
             ws.create_space(&name, path)?;
-            ws.save()?;
             println!("Created space '{}'", name);
         }
         SpaceCommands::List => {
@@ -65,27 +61,24 @@ pub fn run(args: SpaceArgs) -> Result<()> {
         }
         SpaceCommands::Delete { name } => {
             ws.delete_space(&name)?;
-            ws.save()?;
             println!("Deleted space '{}'", name);
         }
         SpaceCommands::Use { name } => {
             ws.set_active_space(&name)?;
-            ws.save()?;
             println!("Now using space '{}'", name);
         }
-        SpaceCommands::Current => {
-            match ws.active_space() {
-                Some(name) => println!("{}", name),
-                None => println!("No active space. Set one with `spacer space use <name>`."),
-            }
-        }
+        SpaceCommands::Current => match ws.active_space() {
+            Some(name) => println!("{}", name),
+            None => println!("No active space. Set one with `spacer space use <name>`."),
+        },
         SpaceCommands::Go { name } => {
-            let name = name
-                .or_else(|| ws.active_space())
-                .ok_or_else(|| anyhow::anyhow!(
+            let name = name.or_else(|| ws.active_space()).ok_or_else(|| {
+                anyhow::anyhow!(
                     "no space specified — pass a name or set one with `spacer space use <name>`"
-                ))?;
-            let space = ws.spaces()
+                )
+            })?;
+            let space = ws
+                .spaces()
                 .iter()
                 .find(|s| s.name == name)
                 .ok_or_else(|| anyhow::anyhow!("space '{}' not found", name))?;

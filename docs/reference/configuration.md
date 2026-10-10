@@ -43,7 +43,8 @@ version or migration mechanism.
 
 Missing configuration loads as empty state. Mutation followed by save creates
 metadata as needed, even without an explicit init. Invalid JSON is an error.
-`workspace init` checks for `.spacer` existence only and does not repair bad data.
+`workspace init` loads configuration first, then checks for `.spacer` existence.
+Malformed data is reported without being overwritten.
 
 ## Persistence limits
 
@@ -56,6 +57,7 @@ Custom paths can point outside the root. Names and paths are not comprehensively
 validated, and printed navigation paths are not checked for existence. These are
 current constraints, not guarantees of safe arbitrary filesystem operations.
 
-The library's separate Git adapter stores active context in `.spacer/state.json`
-and scans repositories/worktrees. The CLI does not read that state file. See
-[architecture](../explanation/architecture.md) for the distinction.
+The Git adapter performs Git operations only; it does not own registration or
+active context. The former Git backend's `.spacer/state.json` is not read or
+migrated. See [architecture](../explanation/architecture.md) and the
+[Rust API migration reference](rust-api.md).

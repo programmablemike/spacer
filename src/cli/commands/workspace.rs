@@ -13,18 +13,14 @@ pub enum WorkspaceCommands {
     Init,
 }
 
-pub fn run(args: WorkspaceArgs) -> Result<()> {
+pub fn run(args: WorkspaceArgs, ws: &mut spacer_core::Workspace) -> Result<()> {
     match args.command {
         WorkspaceCommands::Init => {
-            let root = spacer_core::default_root()?;
-
-            if spacer_core::Workspace::is_initialized(&root) {
-                println!("Spacer is already initialized at {}", root.display());
-                return Ok(());
+            if ws.initialize()? {
+                println!("Initialized Spacer at {}", ws.root().display());
+            } else {
+                println!("Spacer is already initialized at {}", ws.root().display());
             }
-
-            spacer_core::Workspace::init(&root)?;
-            println!("Initialized Spacer at {}", root.display());
             Ok(())
         }
     }

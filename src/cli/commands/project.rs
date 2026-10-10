@@ -1,8 +1,8 @@
 use anyhow::Result;
 use clap::{Args, Subcommand};
 use std::path::PathBuf;
-use tabled::Table;
 use tabled::settings::Style;
+use tabled::Table;
 
 use crate::cli::mapper;
 
@@ -59,29 +59,27 @@ pub enum ProjectCommands {
     },
 }
 
-fn resolve_space(flag: Option<String>, ws: &spacer_core::Workspace<impl spacer_core::Backend>) -> Result<String> {
-    flag.or_else(|| ws.active_space())
-        .ok_or_else(|| anyhow::anyhow!(
+fn resolve_space(flag: Option<String>, ws: &spacer_core::Workspace) -> Result<String> {
+    flag.or_else(|| ws.active_space()).ok_or_else(|| {
+        anyhow::anyhow!(
             "no space specified — use --space or set one with `spacer space use <name>`"
-        ))
+        )
+    })
 }
 
-fn resolve_project(flag: Option<String>, ws: &spacer_core::Workspace<impl spacer_core::Backend>) -> Result<String> {
-    flag.or_else(|| ws.active_project())
-        .ok_or_else(|| anyhow::anyhow!(
+fn resolve_project(flag: Option<String>, ws: &spacer_core::Workspace) -> Result<String> {
+    flag.or_else(|| ws.active_project()).ok_or_else(|| {
+        anyhow::anyhow!(
             "no project specified — pass a name or set one with `spacer project use <name>`"
-        ))
+        )
+    })
 }
 
-pub fn run(args: ProjectArgs) -> Result<()> {
-    let root = spacer_core::default_root()?;
-    let mut ws = spacer_core::Workspace::open(&root)?;
-
+pub fn run(args: ProjectArgs, ws: &mut spacer_core::Workspace) -> Result<()> {
     match args.command {
         ProjectCommands::Create { name, space, path } => {
-            let space = resolve_space(space, &ws)?;
+            let space = resolve_space(space, ws)?;
             ws.create_project(&name, &space, path)?;
-            ws.save()?;
             println!("Created project '{}' in space '{}'", name, space);
         }
         ProjectCommands::List { space } => {
@@ -96,30 +94,29 @@ pub fn run(args: ProjectArgs) -> Result<()> {
             }
         }
         ProjectCommands::Delete { name, space } => {
-            let space = resolve_space(space, &ws)?;
+            let space = resolve_space(space, ws)?;
             ws.delete_project(&name, &space)?;
-            ws.save()?;
             println!("Deleted project '{}' from space '{}'", name, space);
         }
         ProjectCommands::Use { name, space } => {
-            let space = resolve_space(space, &ws)?;
+            let space = resolve_space(space, ws)?;
             ws.set_active_project(&name, &space)?;
-            ws.save()?;
             println!("Now using project '{}'", name);
         }
-        ProjectCommands::Current => {
-            match ws.active_project() {
-                Some(name) => println!("{}", name),
-                None => println!("No active project. Set one with `spacer project use <name>`."),
-            }
-        }
+        ProjectCommands::Current => match ws.active_project() {
+            Some(name) => println!("{}", name),
+            None => println!("No active project. Set one with `spacer project use <name>`."),
+        },
         ProjectCommands::Go { name, space } => {
-            let name = resolve_project(name, &ws)?;
-            let space = resolve_space(space, &ws)?;
-            let project = ws.projects(Some(&space))
+            let name = resolve_project(name, ws)?;
+            let space = resolve_space(space, ws)?;
+            let project = ws
+                .projects(Some(&space))
                 .into_iter()
                 .find(|p| p.name == name)
-                .ok_or_else(|| anyhow::anyhow!("project '{}' in space '{}' not found", name, space))?;
+                .ok_or_else(|| {
+                    anyhow::anyhow!("project '{}' in space '{}' not found", name, space)
+                })?;
             print!("{}", project.path.display());
         }
     }

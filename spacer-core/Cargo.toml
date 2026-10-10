@@ -2,13 +2,5 @@
 name = "spacer-core"
 version = "0.1.0"
 edition = "2021"
-description = "Core domain library for the Spacer project management tool"
+description = "Domain model, application services, and ports for Spacer"
 license = "MIT"
-
-[dependencies]
-anyhow = "1"
-serde = { version = "1", features = ["derive"] }
-serde_json = "1"
-
-[dev-dependencies]
-tempfile = "3"

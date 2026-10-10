@@ -1,7 +1,7 @@
 use anyhow::Result;
 use clap::{Args, Subcommand};
-use tabled::Table;
 use tabled::settings::Style;
+use tabled::Table;
 
 use crate::cli::mapper;
 
@@ -45,23 +45,27 @@ pub enum ChangeCommands {
     },
 }
 
-fn resolve_space(flag: Option<String>, ws: &spacer_core::Workspace<impl spacer_core::Backend>) -> Result<String> {
-    flag.or_else(|| ws.active_space())
-        .ok_or_else(|| anyhow::anyhow!(
+fn resolve_space(flag: Option<String>, ws: &spacer_core::Workspace) -> Result<String> {
+    flag.or_else(|| ws.active_space()).ok_or_else(|| {
+        anyhow::anyhow!(
             "no space specified — use --space or set one with `spacer space use <name>`"
-        ))
+        )
+    })
 }
 
-pub fn run(args: ChangeArgs) -> Result<()> {
-    let root = spacer_core::default_root()?;
-    let mut ws = spacer_core::Workspace::open(&root)?;
-
+pub fn run(args: ChangeArgs, ws: &mut spacer_core::Workspace) -> Result<()> {
     match args.command {
-        ChangeCommands::Start { name, project, space } => {
-            let space = resolve_space(space, &ws)?;
+        ChangeCommands::Start {
+            name,
+            project,
+            space,
+        } => {
+            let space = resolve_space(space, ws)?;
             ws.start_change(&name, &project, &space)?;
-            ws.save()?;
-            println!("Started change '{}' in project '{}/{}'", name, space, project);
+            println!(
+                "Started change '{}' in project '{}/{}'",
+                name, space, project
+            );
         }
         ChangeCommands::List { project, space } => {
             let space = space.or_else(|| ws.active_space());
@@ -73,10 +77,13 @@ pub fn run(args: ChangeArgs) -> Result<()> {
                 println!("{}", Table::new(rows).with(Style::sharp()));
             }
         }
-        ChangeCommands::Finish { name, project, space } => {
-            let space = resolve_space(space, &ws)?;
+        ChangeCommands::Finish {
+            name,
+            project,
+            space,
+        } => {
+            let space = resolve_space(space, ws)?;
             ws.finish_change(&name, &project, &space)?;
-            ws.save()?;
             println!("Finished change '{}'", name);
         }
     }

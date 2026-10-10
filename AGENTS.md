@@ -16,7 +16,13 @@
 ## Project structure and verification
 
 - This is a Rust workspace. `src/cli/` and `src/tui/` provide presentation;
-  `spacer-core/` contains domain types, workspace operations, and adapters.
+  `spacer-core/` contains domain models, application services, and ports;
+  `spacer-data/` implements JSON, filesystem, and Git adapters.
+- Keep dependencies pointing inward. Core code must not import data adapters,
+  presentation frameworks, or perform direct I/O. Construct adapters in the
+  executable composition root, and keep use-case policy in the core.
+- Presentation calls application services and renders domain results. Data
+  adapters implement core-owned ports without deciding lifecycle semantics.
 - Use the development tooling defined by `flake.nix` or `.flox/` when needed.
 - For Rust changes, run focused verification and the applicable workspace checks:
   `cargo test --workspace --locked`, `cargo fmt --all -- --check`, and
