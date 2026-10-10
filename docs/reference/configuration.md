@@ -96,3 +96,8 @@ The Git adapter performs Git operations only; it does not own registration or
 active context. The former Git backend's `.spacer/state.json` requires explicit reconciliation before loading. See
 [recovery](../how-to/recover-workspace.md). See [architecture](../explanation/architecture.md) and the
 [Rust API migration reference](rust-api.md).
+
+Git subprocesses use the selected repository and discard inherited repository-local
+Git variables (such as `GIT_DIR`, `GIT_WORK_TREE`, and `GIT_INDEX_FILE`) and
+command-scoped Git configuration. Ordinary Git system, global, and repository
+configuration still applies. Spacer does not set your commit identity.

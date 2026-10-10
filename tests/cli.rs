@@ -351,3 +351,76 @@ fn shell_wrappers_preserve_cwd_and_failure_status() {
         );
     }
 }
+
+#[test]
+fn inherited_git_environment_cannot_redirect_project_operations() {
+    let tmp = tempfile::tempdir().unwrap();
+    let root = tmp.path();
+    ok(root, &["workspace", "init"]);
+    ok(root, &["space", "create", "alpha"]);
+    ok(root, &["project", "create", "other", "--space", "alpha"]);
+    let other = root.join("alpha/other");
+    initial_commit(&other);
+    let config = std::fs::read(other.join(".git/config")).unwrap();
+    let head = std::fs::read(other.join(".git/HEAD")).unwrap();
+    let poisoned = |args: &[&str]| {
+        let output = Command::new(env!("CARGO_BIN_EXE_spacer"))
+            .args(args)
+            .env("SPACER_ROOT", root)
+            .env_remove("SPACER_SPACE")
+            .env_remove("SPACER_PROJECT")
+            .env("GIT_DIR", other.join(".git"))
+            .env("GIT_WORK_TREE", &other)
+            .env("GIT_COMMON_DIR", other.join(".git"))
+            .env("GIT_INDEX_FILE", other.join(".git/index"))
+            .env("GIT_OBJECT_DIRECTORY", other.join(".git/objects"))
+            .env("GIT_CONFIG_COUNT", "1")
+            .env("GIT_CONFIG_KEY_0", "core.worktree")
+            .env("GIT_CONFIG_VALUE_0", &other)
+            .output()
+            .unwrap();
+        assert!(
+            output.status.success(),
+            "{}",
+            String::from_utf8_lossy(&output.stderr)
+        );
+    };
+    poisoned(&["project", "create", "web", "--space", "alpha"]);
+    let project = root.join("alpha/web");
+    assert!(project.join(".git").is_dir());
+    initial_commit(&project);
+    poisoned(&[
+        "change",
+        "start",
+        "feature",
+        "--space",
+        "alpha",
+        "--project",
+        "web",
+    ]);
+    assert!(Command::new("git")
+        .current_dir(&project)
+        .args(["show-ref", "--verify", "refs/heads/feature"])
+        .output()
+        .unwrap()
+        .status
+        .success());
+    assert!(!Command::new("git")
+        .current_dir(&other)
+        .args(["show-ref", "--verify", "refs/heads/feature"])
+        .output()
+        .unwrap()
+        .status
+        .success());
+    poisoned(&[
+        "change",
+        "finish",
+        "feature",
+        "--space",
+        "alpha",
+        "--project",
+        "web",
+    ]);
+    assert_eq!(std::fs::read(other.join(".git/config")).unwrap(), config);
+    assert_eq!(std::fs::read(other.join(".git/HEAD")).unwrap(), head);
+}

@@ -140,7 +140,30 @@ fn git_path(path: &Path) -> PathBuf {
     path.to_path_buf()
 }
 fn run(cwd: &Path, args: &[&OsStr]) -> Result<Vec<u8>> {
-    let output = Command::new("git")
+    let mut command = Command::new("git");
+    // Hook and shell environments must not redirect a registered repository's
+    // index, objects, worktree, or command-scoped configuration elsewhere.
+    for name in [
+        "GIT_ALTERNATE_OBJECT_DIRECTORIES",
+        "GIT_CONFIG",
+        "GIT_CONFIG_PARAMETERS",
+        "GIT_CONFIG_COUNT",
+        "GIT_OBJECT_DIRECTORY",
+        "GIT_DIR",
+        "GIT_WORK_TREE",
+        "GIT_IMPLICIT_WORK_TREE",
+        "GIT_GRAFT_FILE",
+        "GIT_INDEX_FILE",
+        "GIT_NO_REPLACE_OBJECTS",
+        "GIT_REPLACE_REF_BASE",
+        "GIT_PREFIX",
+        "GIT_SHALLOW_FILE",
+        "GIT_COMMON_DIR",
+        "GIT_NAMESPACE",
+    ] {
+        command.env_remove(name);
+    }
+    let output = command
         .args(args)
         .current_dir(cwd)
         .output()
