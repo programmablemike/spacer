@@ -90,8 +90,8 @@ spacer project go website
 ```
 
 Export `SPACER_ROOT` in your shell startup file as well if you want it to persist
-across sessions. Without it, Spacer uses the current directory as the workspace
-root; it does not search parent directories.
+across sessions. Without it, Spacer searches for the nearest ancestor workspace. External project
+paths require an explicit root.
 
 ## Track changes
 
@@ -141,7 +141,7 @@ commands use environment overrides followed by saved defaults:
 
 | Variable | Purpose |
 | --- | --- |
-| `SPACER_ROOT` | Workspace root; defaults to the current directory |
+| `SPACER_ROOT` | Explicit workspace root; otherwise nearest ancestor workspace |
 | `SPACER_SPACE` | Overrides the saved active space when nonempty |
 | `SPACER_PROJECT` | Overrides the saved active project when nonempty |
 

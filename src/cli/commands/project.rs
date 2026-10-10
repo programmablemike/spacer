@@ -137,14 +137,7 @@ pub fn run(args: ProjectArgs, ws: &mut spacer_core::Workspace) -> Result<()> {
         ProjectCommands::Go { name, space } => {
             let space = resolve_space(space, ws)?;
             let name = resolve_project(name, &space, ws)?;
-            let project = ws
-                .projects(Some(&space))
-                .into_iter()
-                .find(|p| p.name == name)
-                .ok_or_else(|| {
-                    anyhow::anyhow!("project '{}' in space '{}' not found", name, space)
-                })?;
-            print!("{}", project.path.display());
+            print!("{}", ws.project_path(&name, &space)?.display());
         }
     }
 

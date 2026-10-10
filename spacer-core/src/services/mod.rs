@@ -369,6 +369,27 @@ impl Workspace {
             .retain(|c| !(c.name == name && c.project == project && c.space == space));
         self.persist(next)
     }
+    fn existing_directory(&self, path: &Path) -> Result<PathBuf> {
+        if !self.filesystem.is_dir(path)? {
+            return Err(Error::NotFound(format!(
+                "directory '{}' is missing; restore it or repair registration/Git worktree records",
+                path.display()
+            )));
+        }
+        self.filesystem.normalize(path)
+    }
+    pub fn space_path(&self, name: &str) -> Result<PathBuf> {
+        self.existing_directory(&self.space(name)?.path)
+    }
+    pub fn project_path(&self, name: &str, space: &str) -> Result<PathBuf> {
+        self.existing_directory(&self.project(name, space)?.path)
+    }
+    pub fn change_path(&self, name: &str, project: &str, space: &str) -> Result<PathBuf> {
+        let tree = self.worktrees(project, space)?.into_iter()
+            .find(|w| !w.is_primary && w.branch.as_deref() == Some(name))
+            .ok_or_else(|| Error::NotFound(format!("linked worktree '{name}' not found; detached checkouts must be addressed with Git directly")))?;
+        self.existing_directory(&tree.path)
+    }
     /// Observe actual Git state for a registered project. Does not create registry entries.
     pub fn worktrees(&self, project: &str, space: &str) -> Result<Vec<Worktree>> {
         let repository = &self.project(project, space)?.path;

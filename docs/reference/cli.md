@@ -81,3 +81,11 @@ ignored-file-containing, locked, and detached worktrees, with no force option.
 
 `change list --tracked` and `change finish NAME --project PROJECT --tracked` are
 explicit metadata-only operations for legacy records. They do not touch Git.
+
+## Path resolution
+
+`path space [NAME]`, `path project [NAME] [--space SPACE]`, and
+`path change NAME [--project PROJECT] [--space SPACE]` print validated paths only.
+`go SPACE[/PROJECT[/CHANGE]]` resolves the same paths, including branch names
+containing slashes. Git-reported locations are authoritative. Missing directories
+fail with nonzero status and no path output. Detached worktrees require Git directly.

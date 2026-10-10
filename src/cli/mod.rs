@@ -20,6 +20,10 @@ pub enum Commands {
     Project(commands::project::ProjectArgs),
     /// Manage changes
     Change(commands::change::ChangeArgs),
+    /// Print a validated filesystem path
+    Path(commands::path::PathArgs),
+    /// Resolve space/project/change navigation
+    Go(commands::go::GoArgs),
     /// Print shell integration code
     Shell(commands::shell::ShellArgs),
 }
