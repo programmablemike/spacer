@@ -58,6 +58,9 @@ jobs:
         run: |
           if [[ "$RUNNER_OS" == "Linux" ]]; then
             dbus_package=$(nix eval --raw --inputs-from . nixpkgs#dbus.outPath)
+            # The headless runner has no NixOS graphics-driver registration.
+            rendering_hook=$(nix build --inputs-from . nixpkgs#mesa.llvmpipeHook --no-link --print-out-paths)
+            source "$rendering_hook/nix-support/setup-hook"
             nix shell --inputs-from . nixpkgs#dbus nixpkgs#xvfb-run --command \
               dbus-run-session --config-file="$dbus_package/share/dbus-1/session.conf" -- \
               xvfb-run -a env WEBKIT_DISABLE_COMPOSITING_MODE=1 \
