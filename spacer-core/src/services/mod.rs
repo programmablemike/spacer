@@ -1,6 +1,8 @@
 use crate::ports::{Filesystem, Git, Registry};
 use crate::{Change, ContextOverrides, Error, Project, Result, Space, WorkspaceSnapshot, Worktree};
-use std::path::{Component, Path, PathBuf};
+use std::path::{Path, PathBuf};
+
+mod validation;
 
 /// Inbound application API shared by presentation adapters.
 /// Outbound dependencies are injected; the core performs no direct I/O.
@@ -21,7 +23,37 @@ impl Workspace {
         git: impl Git + 'static,
         context: ContextOverrides,
     ) -> Result<Self> {
-        let state = registry.load()?;
+        let mut state = registry.load()?;
+        validation::validate_state(&state)?;
+        // Legacy stale defaults are cleared in memory; opening never writes storage.
+        validation::clear_stale_context(&mut state);
+        let mut context = context;
+        context.space = context.space.filter(|s| !s.is_empty());
+        context.project = context.project.filter(|s| !s.is_empty());
+        let effective_space = context.space.as_ref().or(state.active_space.as_ref());
+        if let Some(space) = &context.space {
+            if !state.spaces.iter().any(|s| &s.name == space) {
+                return Err(Error::InvalidOperation(format!(
+                    "session space '{space}' is not registered; correct or unset SPACER_SPACE"
+                )));
+            }
+        }
+        if let Some(project) = &context.project {
+            let space = effective_space.ok_or_else(|| {
+                Error::InvalidOperation(
+                    "session project requires a registered space; set SPACER_SPACE".into(),
+                )
+            })?;
+            if !state
+                .projects
+                .iter()
+                .any(|p| &p.space == space && &p.name == project)
+            {
+                return Err(Error::InvalidOperation(format!("session project '{project}' is not registered in space '{space}'; correct or unset SPACER_PROJECT")));
+            }
+            // Bind the override to its space, even if that space came from defaults.
+            context.space = Some(space.clone());
+        }
         Ok(Self {
             root,
             state,
@@ -83,17 +115,28 @@ impl Workspace {
         self.context
             .space
             .as_ref()
-            .filter(|s| !s.is_empty())
             .or(self.state.active_space.as_ref())
+            .filter(|name| self.state.spaces.iter().any(|s| &s.name == *name))
             .cloned()
     }
     pub fn active_project(&self) -> Option<String> {
-        self.context
-            .project
-            .as_ref()
-            .filter(|s| !s.is_empty())
-            .or(self.state.active_project.as_ref())
-            .cloned()
+        let space = self.active_space()?;
+        let project = self.context.project.as_ref().or_else(|| {
+            (self.state.active_space.as_deref() == Some(space.as_str()))
+                .then_some(self.state.active_project.as_ref())
+                .flatten()
+        })?;
+        self.state
+            .projects
+            .iter()
+            .any(|p| p.space == space && &p.name == project)
+            .then(|| project.clone())
+    }
+    /// A default project is usable only within its selected space.
+    pub fn active_project_in(&self, space: &str) -> Option<String> {
+        (self.active_space().as_deref() == Some(space))
+            .then(|| self.active_project())
+            .flatten()
     }
     fn space(&self, name: &str) -> Result<&Space> {
         self.state
@@ -112,6 +155,7 @@ impl Workspace {
             })
     }
     pub fn create_space(&mut self, name: &str, path: Option<PathBuf>) -> Result<Space> {
+        validation::entity_name(name)?;
         if self.state.spaces.iter().any(|s| s.name == name) {
             return Err(Error::AlreadyExists(format!(
                 "space '{name}' already exists"
@@ -127,22 +171,35 @@ impl Workspace {
         self.persist(next)?;
         Ok(space)
     }
-    /// Unregister only; neither files nor child records are removed.
+    /// Unregister an empty space, preserving files.
     pub fn delete_space(&mut self, name: &str) -> Result<()> {
         self.space(name)?;
+        if self.state.projects.iter().any(|p| p.space == name) {
+            return Err(Error::InvalidOperation(format!(
+                "space '{name}' contains registered projects; unregister them first"
+            )));
+        }
         let mut next = self.state.clone();
+        if next.active_space.as_deref() == Some(name) {
+            next.active_space = None;
+            next.active_project = None;
+        }
         next.spaces.retain(|s| s.name != name);
         self.persist(next)
     }
     pub fn set_active_space(&mut self, name: &str) -> Result<()> {
         self.space(name)?;
         let mut next = self.state.clone();
+        if next.active_space.as_deref() != Some(name) {
+            next.active_project = None;
+        }
         next.active_space = Some(name.into());
         self.persist(next)
     }
     pub fn set_active_project(&mut self, name: &str, space: &str) -> Result<()> {
         self.project(name, space)?;
         let mut next = self.state.clone();
+        next.active_space = Some(space.into());
         next.active_project = Some(name.into());
         self.persist(next)
     }
@@ -170,6 +227,7 @@ impl Workspace {
         path: Option<PathBuf>,
         initialize_git: bool,
     ) -> Result<Project> {
+        validation::entity_name(name)?;
         let parent = self.space(space)?;
         if self
             .state
@@ -198,13 +256,29 @@ impl Workspace {
     /// Unregister only, regardless of which Git implementation is injected.
     pub fn delete_project(&mut self, name: &str, space: &str) -> Result<()> {
         self.project(name, space)?;
+        if self
+            .state
+            .changes
+            .iter()
+            .any(|c| c.space == space && c.project == name)
+        {
+            return Err(Error::InvalidOperation(format!(
+                "project '{name}' has tracked changes; finish tracking them before unregistering"
+            )));
+        }
         let mut next = self.state.clone();
+        if next.active_space.as_deref() == Some(space)
+            && next.active_project.as_deref() == Some(name)
+        {
+            next.active_project = None;
+        }
         next.projects
             .retain(|p| !(p.name == name && p.space == space));
         self.persist(next)
     }
     /// Metadata tracking; does not create a checkout.
     pub fn start_change(&mut self, name: &str, project: &str, space: &str) -> Result<Change> {
+        validation::change_name(name)?;
         self.project(project, space)?;
         if self
             .state
@@ -252,16 +326,7 @@ impl Workspace {
         space: &str,
         base: &str,
     ) -> Result<Worktree> {
-        if name.is_empty()
-            || Path::new(name)
-                .components()
-                .any(|c| !matches!(c, Component::Normal(_)))
-        {
-            return Err(Error::InvalidOperation(
-                "worktree name must be a relative branch path without '.' or '..' components"
-                    .into(),
-            ));
-        }
+        validation::change_name(name)?;
         let repository = &self.project(project, space)?.path;
         if self
             .git

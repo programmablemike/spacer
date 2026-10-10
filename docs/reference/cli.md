@@ -21,10 +21,10 @@ shared workspace service with JSON persistence. Tracking commands do not invoke 
 | --- | --- |
 | `space create NAME [--path PATH]` | Record a space and create its directory if needed; default path is `<root>/<name>`. |
 | `space list` | List spaces and mark the active name. |
-| `space use NAME` | Save the active space. |
+| `space use NAME` | Save the active space; clear the saved project when the space changes. |
 | `space current` | Print active space or a message that none is selected. |
 | `space go [NAME]` | Print named/active space path. |
-| `space delete NAME` | Remove the space record, preserving files. |
+| `space delete NAME` | Remove an empty space record, preserving files and clearing its selection. |
 
 ## Projects
 
@@ -32,10 +32,10 @@ shared workspace service with JSON persistence. Tracking commands do not invoke 
 | --- | --- |
 | `project create NAME [--space SPACE] [--path PATH]` | Record a project and create its directory; default path is `<space-path>/<name>`. Does not initialize Git. |
 | `project list [--space SPACE]` | List projects filtered by explicit/active space; list all if neither exists. |
-| `project use NAME [--space SPACE]` | Save the active project name; does not change the active space. |
+| `project use NAME [--space SPACE]` | Save the active project and its space together. |
 | `project current` | Print active project or a message that none is selected. |
 | `project go [NAME] [--space SPACE]` | Print the named/active project's path in the resolved space. |
-| `project delete NAME [--space SPACE]` | Remove the project record, preserving files. |
+| `project delete NAME [--space SPACE]` | Remove a project without tracked changes, preserving files and clearing its selection. |
 
 ## Changes
 
@@ -45,9 +45,9 @@ shared workspace service with JSON persistence. Tracking commands do not invoke 
 | `change list [--project PROJECT] [--space SPACE]` | List changes filtered by provided project and explicit/active space. Omitting project does not apply the active project. |
 | `change finish NAME --project PROJECT [--space SPACE]` | Remove the tracking entry; preserve Git branches, worktrees, and files. |
 
-Deletion does not enforce parent/child relationships or clear active selections.
-Finish change records before removing their project; remove project records before
-removing their space. See [configuration](configuration.md) for context resolution.
+Deletion refuses parents with tracked children. Finish tracked changes before
+removing their project, and remove projects before removing their space.
+See [configuration](configuration.md) for context resolution.
 
 ## Shell integration
 

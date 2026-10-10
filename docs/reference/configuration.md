@@ -11,12 +11,18 @@
 | `SPACER_PROJECT` | Nonempty value overrides the saved active project where a command accepts that default. |
 | `SHELL` | Selects shell integration output when the shell argument is omitted. |
 
-Explicit command arguments take precedence over environment and saved defaults.
-No workspace ancestor search or project inference from the current checkout is
-performed. Setting an active project does not change the active space. Saved
-context is shared by all sessions using that configuration. Space/project names
-in environment overrides are returned as-is; operations may fail when resolving
-an unknown name.
+Explicit command arguments take precedence over valid environment and saved defaults.
+Session overrides are validated when opening the workspace, even for commands
+with explicit flags; unknown overrides fail with instructions to correct or
+unset them. No workspace ancestor search or checkout inference is performed.
+
+The saved `active_space` and `active_project` form a pair. Selecting a project
+sets both fields; changing the saved space clears its project selection. A space
+override cannot reinterpret a saved project in another space, even if both spaces
+have a project with the same name. A project override is bound to the resolved
+space when the workspace opens. Session overrides never overwrite saved defaults.
+`project go --space OTHER` requires an explicit project name when OTHER is not
+the selected space. Saved defaults remain shared by all sessions.
 
 `change start` and `change finish` require `--project`; `change list` without it
 lists across projects. Relative root/custom paths are not normalized to absolute
@@ -38,7 +44,7 @@ The CLI and TUI use `<root>/.spacer/config.json`. Example with an absolute root:
 
 The three arrays are required on deserialization. Active selections are optional
 and omitted when unset. Projects are identified by name and space; changes by
-name, project, and space. Active projects store only a name. There is no schema
+name, project, and space. The two active fields jointly identify the selected project. There is no schema
 version or migration mechanism.
 
 Missing configuration loads as empty state. Mutation followed by save creates
@@ -46,15 +52,34 @@ metadata as needed, even without an explicit init. Invalid JSON is an error.
 `workspace init` loads configuration first, then checks for `.spacer` existence.
 Malformed data is reported without being overwritten.
 
+## Invariants and recovery
+
+Space/project names must be nonempty, non-hidden portable directory components.
+Separators, control characters, Windows reserved characters/device names, and
+trailing dots/spaces are rejected on every platform. Internal spaces are allowed.
+Change names allow slash-separated branches such as `feat/login`, but reject
+traversal, empty components, Git-special syntax, and nonportable path components.
+These checks apply before directory creation or Git effects and when loading
+existing registry records.
+
+Spaces with registered projects cannot be removed. Projects with tracked changes
+cannot be removed until those tracking entries are finished. Removing a selected
+record clears its saved selection; files and Git worktrees are preserved.
+
+On load, stale active selections clear in memory without writing the file; the
+next successful mutation saves the corrected defaults. Duplicate records,
+invalid names, and orphaned projects/changes fail before any mutation. Back up
+`config.json`, then repair the identified record or restore its missing parent.
+Spacer does not discard orphaned records automatically.
+
 ## Persistence limits
 
 Writes replace the file directly, without atomic replacement or locking. Avoid
 concurrent mutating commands and keep a backup before significant edits.
-Deletion does not remove child records or clear context. Switching spaces does
-not reset the saved project. There is no command to clear saved context.
+There is no separate command to clear saved context.
 
-Custom paths can point outside the root. Names and paths are not comprehensively
-validated, and printed navigation paths are not checked for existence. These are
+Custom paths can point outside the root. Path normalization, symlink containment, and canonical repository uniqueness
+are not enforced, and printed navigation paths are not checked for existence. These are
 current constraints, not guarantees of safe arbitrary filesystem operations.
 
 The Git adapter performs Git operations only; it does not own registration or
