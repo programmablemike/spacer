@@ -109,7 +109,8 @@ checkout refusal, and external worktree paths. CLI tests spawn the binary to
 verify composition, persistence between invocations, and environment precedence.
 
 The existing JSON schema and metadata-based CLI behavior are preserved. Known
-limitations remain: no ancestor discovery, and incomplete path normalization/containment. Removing
+limitations remain: no ancestor discovery, and no filesystem transaction spanning validation and mutation. Symlink checks
+assume project directories are not concurrently changed by an external process. Removing
 parents with tracked children is rejected; affected saved context is cleared. The architecture makes those policies central rather than fixing
 all of them as part of the structural refactor.
 

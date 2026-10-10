@@ -23,6 +23,7 @@ impl Workspace {
         git: impl Git + 'static,
         context: ContextOverrides,
     ) -> Result<Self> {
+        let root = filesystem.normalize(&root)?;
         let mut state = registry.load()?;
         validation::validate_state(&state)?;
         // Legacy stale defaults are cleared in memory; opening never writes storage.
@@ -163,13 +164,37 @@ impl Workspace {
         }
         let space = Space {
             name: name.into(),
-            path: path.unwrap_or_else(|| self.root.join(name)),
+            path: self.creation_path(&self.root, name, path)?,
         };
         self.filesystem.create_dir_all(&space.path)?;
         let mut next = self.state.clone();
         next.spaces.push(space.clone());
         self.persist(next)?;
         Ok(space)
+    }
+    fn creation_path(
+        &self,
+        parent: &Path,
+        name: &str,
+        explicit: Option<PathBuf>,
+    ) -> Result<PathBuf> {
+        let parent = self.filesystem.normalize(parent)?;
+        let implicit = explicit.is_none();
+        let path = self
+            .filesystem
+            .normalize(&explicit.unwrap_or_else(|| parent.join(name)))?;
+        if implicit && (!path.starts_with(&parent) || path == parent) {
+            return Err(Error::InvalidOperation(
+                "implicit path escapes its parent; use an explicit custom path".into(),
+            ));
+        }
+        let metadata = self.filesystem.normalize(&self.root.join(".spacer"))?;
+        if path.starts_with(&metadata) || metadata.starts_with(&path) {
+            return Err(Error::InvalidOperation(
+                "space/project path overlaps workspace metadata".into(),
+            ));
+        }
+        Ok(path)
     }
     /// Unregister an empty space, preserving files.
     pub fn delete_space(&mut self, name: &str) -> Result<()> {
@@ -242,8 +267,18 @@ impl Workspace {
         let project = Project {
             name: name.into(),
             space: space.into(),
-            path: path.unwrap_or_else(|| parent.path.join(name)),
+            path: self.creation_path(&parent.path, name, path)?,
         };
+        for existing in &self.state.projects {
+            if self.filesystem.normalize(&existing.path)? == project.path {
+                return Err(Error::AlreadyExists(format!(
+                    "path '{}' is already registered as '{}/{}'",
+                    project.path.display(),
+                    existing.space,
+                    existing.name
+                )));
+            }
+        }
         self.filesystem.create_dir_all(&project.path)?;
         if initialize_git {
             self.git.initialize(&project.path)?;

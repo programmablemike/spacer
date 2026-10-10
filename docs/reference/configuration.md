@@ -25,8 +25,9 @@ space when the workspace opens. Session overrides never overwrite saved defaults
 the selected space. Saved defaults remain shared by all sessions.
 
 `change start` and `change finish` require `--project`; `change list` without it
-lists across projects. Relative root/custom paths are not normalized to absolute
-paths, so their interpretation can change with the invocation directory.
+lists across projects. Relative roots and new custom paths resolve against the invocation directory
+and are stored as absolute paths. Existing symlinks are resolved. Empty roots
+and paths are rejected.
 
 ## Configuration file
 
@@ -82,8 +83,9 @@ do not delete `registry.lock` while Spacer is running. Interrupted temporary
 files are ignored. Back up configuration before manual edits.
 There is no separate command to clear saved context.
 
-Custom paths can point outside the root. Path normalization, symlink containment, and canonical repository uniqueness
-are not enforced, and printed navigation paths are not checked for existence. These are
+Custom paths can point outside the root. New implicit paths must stay within their canonical parent; explicit paths may
+be external but cannot overlap workspace metadata. Two project records cannot
+use the same canonical directory. Navigation paths are not yet checked for existence. These are
 current constraints, not guarantees of safe arbitrary filesystem operations.
 
 The Git adapter performs Git operations only; it does not own registration or

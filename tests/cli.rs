@@ -31,7 +31,10 @@ fn cli_roundtrip_uses_shared_service_and_persists_each_operation() {
     ok(root, &["project", "create", "web"]);
     ok(root, &["project", "use", "web"]);
     let path = root.join("alpha/web");
-    assert_eq!(ok(root, &["project", "go"]), path.display().to_string());
+    assert_eq!(
+        ok(root, &["project", "go"]),
+        path.canonicalize().unwrap().display().to_string()
+    );
     assert!(!path.join(".git").exists());
     ok(root, &["change", "start", "feature", "--project", "web"]);
     assert!(ok(root, &["change", "list"]).contains("feature"));

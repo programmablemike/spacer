@@ -75,7 +75,7 @@ are observable but cannot be closed by the branch-name use case.
 ## Outbound ports
 
 - `Registry`: `load`, `save`, and `is_initialized`; load/save domain snapshots.
-- `Filesystem`: `create_dir_all`; no project-removal policy or recursive deletion.
+- `Filesystem`: `normalize`, `create_dir_all`; no project-removal policy or recursive deletion.
 - `Git`: `initialize`, `add_worktree`, `worktrees`, and `remove_worktree`; no
   registration or active-context policy.
 

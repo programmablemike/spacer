@@ -238,3 +238,58 @@ fn unsupported_schema_and_abandoned_temporary_file_preserve_configuration() {
     assert!(registry.save(&Default::default()).is_err());
     assert_eq!(std::fs::read_to_string(path).unwrap(), future);
 }
+
+#[test]
+fn custom_paths_are_absolute_and_duplicate_project_paths_are_rejected() {
+    use spacer_core::ports::Filesystem;
+    let tmp = tempfile::tempdir().unwrap();
+    let mut ws = workspace(tmp.path());
+    ws.create_space("alpha", None).unwrap();
+    ws.create_space("beta", None).unwrap();
+    let custom = tmp
+        .path()
+        .join("outside space")
+        .join("..")
+        .join("custom project");
+    let p = ws.create_project("web", "alpha", Some(custom)).unwrap();
+    assert!(p.path.is_absolute());
+    assert!(!p
+        .path
+        .components()
+        .any(|p| p == std::path::Component::ParentDir));
+    assert!(ws.create_project("alias", "beta", Some(p.path)).is_err());
+    assert!(ws
+        .create_space("bad", Some(tmp.path().join(".spacer/inside")))
+        .is_err());
+    let relative = LocalFilesystem
+        .normalize(Path::new("relative path/../target path"))
+        .unwrap();
+    assert_eq!(
+        relative,
+        std::env::current_dir()
+            .unwrap()
+            .canonicalize()
+            .unwrap()
+            .join("target path")
+    );
+}
+
+#[cfg(unix)]
+#[test]
+fn symlink_aliases_and_implicit_escape_are_rejected() {
+    use std::os::unix::fs::symlink;
+    let tmp = tempfile::tempdir().unwrap();
+    let outside = tempfile::tempdir().unwrap();
+    let mut ws = workspace(tmp.path());
+    ws.create_space("alpha", None).unwrap();
+    symlink(outside.path(), tmp.path().join("alpha/escape")).unwrap();
+    assert!(ws.create_project("escape", "alpha", None).is_err());
+    let p = ws.create_project("web", "alpha", None).unwrap();
+    symlink(&p.path, tmp.path().join("alias")).unwrap();
+    assert!(ws
+        .create_project("other", "alpha", Some(tmp.path().join("alias")))
+        .is_err());
+    assert!(ws
+        .create_project("external", "alpha", Some(outside.path().to_owned()))
+        .is_ok());
+}
