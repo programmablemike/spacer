@@ -10,6 +10,8 @@ concrete adapters to application services at startup.
 ```mermaid
 flowchart BT
     CLI[CLI handlers] --> Service[Workspace application service]
+    Desktop[Tauri commands / typed DTOs] --> Service
+    Webview[Desktop frontend] --> Desktop
     TUI[Terminal browser] --> Snapshot[Domain snapshot]
     Service --> Snapshot
     Service --> Ports[Registry / Filesystem / Git ports]
@@ -31,10 +33,27 @@ the concrete adapters, and inject them into the service. Workspace loading
 happens before the TUI changes terminal modes. Shell integration is dispatched
 without opening a workspace.
 
-A future graphical presentation can construct the same service with an explicit
-workspace path and translate its results into UI messages. Tauri-specific types
-and serialization would belong to that presentation bridge. No desktop app is
-included in this implementation.
+`desktop/` is a Tauri presentation with a small TypeScript/Vite frontend. Its
+native composition root constructs the same core service with an explicit root
+and no shell environment overrides. `bridge.rs` owns serializable desktop DTOs;
+Serde and Tauri do not enter the domain core.
+
+Native commands run in `spawn_blocking` and serialize access to a selected-root
+session. Every request reopens the workspace so a long-lived UI cannot overwrite
+CLI changes from a cached registry. Requests include their expected root; queued
+actions for a previously selected workspace fail instead of targeting the new
+one. Registry conflict detection still applies to concurrent external writes.
+
+Desktop snapshots expose per-project Git errors alongside registrations. A failed
+scan stays visible and does not turn a successful mutation elsewhere into a
+reported failure. Folder opening and clipboard copying resolve registered targets
+again through the service. The frontend cannot run arbitrary shell commands or
+write registry files directly. Its native capability permits only the main window's
+workspace commands, directory dialog, and clipboard writes.
+
+The desktop has its own Cargo workspace and lockfile so WebKitGTK/AppKit/WebView2
+dependencies do not become CLI build requirements. See the
+[desktop guide](../how-to/desktop.md) for setup and testing.
 
 ## Domain and application services
 
@@ -84,8 +103,8 @@ has no recursive-delete operation.
 
 All ports are `Send + Sync`, so their implementations can be used by threaded
 presentations. The JSON adapter uses atomic replacement and optimistic concurrency checks.
-The ports are synchronous; a future GUI must schedule blocking I/O off its UI
-thread and serialize access to a mutable service instance.
+The ports are synchronous; the desktop schedules blocking I/O off its UI thread
+and serializes session requests.
 
 ## Example operation: create a project
 

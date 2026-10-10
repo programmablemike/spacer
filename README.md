@@ -8,13 +8,28 @@
 
 Organize and navigate your local development projects from the command line.
 Spacer groups projects into spaces and provides a terminal browser for your
-workspace.
+workspace. A Tauri desktop app provides the same project and worktree lifecycle
+through a graphical interface.
 
 **Status: 0.0.1 alpha.** Spacer creates and registers local Git repositories
 and manages linked worktrees. Finish preserves branches; unregister preserves
 files. See [recovery guidance](docs/how-to/recover-workspace.md) for legacy data.
 
-## Install
+## Desktop app
+
+Open or create a workspace, browse projects, start and finish worktrees, and open
+folders graphically. The desktop reuses the CLI's application services and file
+preservation rules. See the [desktop guide](docs/how-to/desktop.md) for source
+setup and native builds. The existing 0.0.1 release contains CLI/TUI binaries;
+desktop installers are available from the Desktop workflow and future releases.
+
+```sh
+cd desktop
+npm ci
+npm run tauri -- dev
+```
+
+## Install the CLI
 
 Download a checksummed archive from the [alpha release](https://github.com/programmablemike/spacer/releases/tag/v0.0.1),
 or build from source with the pinned Rust 1.94.0 toolchain. Git must be on PATH.

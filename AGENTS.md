@@ -17,7 +17,8 @@
 
 - This is a Rust workspace. `src/cli/` and `src/tui/` provide presentation;
   `spacer-core/` contains domain models, application services, and ports;
-  `spacer-data/` implements JSON, filesystem, and Git adapters.
+  `spacer-data/` implements JSON, filesystem, and Git adapters. `desktop/`
+  contains a Tauri presentation and a separate native Cargo workspace.
 - Keep dependencies pointing inward. Core code must not import data adapters,
   presentation frameworks, or perform direct I/O. Construct adapters in the
   executable composition root, and keep use-case policy in the core.
@@ -27,6 +28,10 @@
 - For Rust changes, run focused verification and the applicable workspace checks:
   `cargo test --workspace --locked`, `cargo fmt --all -- --check`, and
   `cargo clippy --workspace --all-targets --locked -- -D warnings`.
+- For desktop changes, run `npm ci`, `npm run format:check`, `npm run build`,
+  and `npm test` from `desktop/` (install Playwright browsers first). Run Rust
+  formatting, Clippy, and tests with `--manifest-path desktop/src-tauri/Cargo.toml`,
+  and build the native bundle. Keep GUI dependencies out of the CLI workspace.
 - Git integration tests require Git on PATH and must use isolated temporary
   repositories. Never exercise destructive behavior against a user's projects.
 - For documentation-only changes, check the diff, links, and factual consistency;

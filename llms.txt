@@ -1,6 +1,6 @@
 # Spacer
 
-> A Rust CLI and read-only terminal browser for organizing local Git projects into spaces and linked worktrees.
+> A Rust CLI, Tauri desktop app, and read-only terminal browser for organizing local Git projects into spaces and linked worktrees.
 
 Spacer 0.0.1 is an alpha. Its hexagonal architecture separates presentation,
 domain/application services, and data adapters. The versioned JSON registry owns
@@ -13,6 +13,8 @@ Workspace discovery uses SPACER_ROOT or the nearest ancestor workspace.
 - [Your first workspace](docs/tutorials/first-workspace.md): Create a repository and complete a worktree lifecycle.
 
 ## How-to guides
+
+- [Desktop app](docs/how-to/desktop.md): Graphical lifecycle, explicit workspace selection, native builds, and verification.
 
 - [Installation](docs/how-to/install.md): Verified archives, Cargo, Nix, and prerequisites.
 - [Shell navigation](docs/how-to/shell-navigation.md): Wrappers, managed sessions, and Windows navigation.

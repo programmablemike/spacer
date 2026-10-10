@@ -9,9 +9,10 @@
 | `spacer-core` | Models, `Workspace`, outbound ports, `Error`/`Result` | Standard library only |
 | `spacer-data` | `JsonRegistry`, `LocalFilesystem`, `GitCli` | `spacer-core`, Serde, serde_json, tempfile |
 | `spacer` | CLI/TUI executable and composition root | Both libraries plus presentation dependencies |
+| `spacer-desktop` | Separate Tauri executable, command bridge, and DTOs | Both libraries plus Tauri/Serde; separate workspace |
 
 Presentation modules depend on the core API. Only the executable's composition
-root imports concrete data adapters. There is no Tauri dependency.
+roots import concrete data adapters. Tauri is confined to the desktop package.
 
 ## Constructing a workspace
 

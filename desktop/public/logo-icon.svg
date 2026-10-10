@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128" role="img" aria-labelledby="title desc">
+  <title id="title">Spacer icon</title>
+  <desc id="desc">A four-by-four grid with fifteen ivory blocks and one yellow block docking into the open slot in the third row.</desc>
+  <rect width="128" height="128" rx="22" fill="#242729"/>
+  <g fill="#faf9f4">
+    <rect x="18" y="26" width="16" height="16" rx="2"/>
+    <rect x="38" y="26" width="16" height="16" rx="2"/>
+    <rect x="58" y="26" width="16" height="16" rx="2"/>
+    <rect x="78" y="26" width="16" height="16" rx="2"/>
+    <rect x="18" y="46" width="16" height="16" rx="2"/>
+    <rect x="38" y="46" width="16" height="16" rx="2"/>
+    <rect x="58" y="46" width="16" height="16" rx="2"/>
+    <rect x="78" y="46" width="16" height="16" rx="2"/>
+    <rect x="18" y="66" width="16" height="16" rx="2"/>
+    <rect x="38" y="66" width="16" height="16" rx="2"/>
+    <rect x="58" y="66" width="16" height="16" rx="2"/>
+    <rect x="18" y="86" width="16" height="16" rx="2"/>
+    <rect x="38" y="86" width="16" height="16" rx="2"/>
+    <rect x="58" y="86" width="16" height="16" rx="2"/>
+    <rect x="78" y="86" width="16" height="16" rx="2"/>
+  </g>
+  <rect x="94" y="66" width="16" height="16" rx="2" fill="#ffbf00"/>
+</svg>

@@ -33,3 +33,18 @@ python3 tests/terminal.py target/release/spacer
 
 Windows uses `target/release/spacer.exe` and omits the POSIX tutorial and terminal tests. CI uses native archives built by
 `scripts/package.py`; the former cargo-dist configuration is no longer used.
+
+
+## Desktop gates
+
+The separate Desktop workflow runs TypeScript checks, formatting, Chromium/WebKit
+UI tests, native Rust checks, an actual webview lifecycle, and installer builds. It uses the same five native
+targets as the CLI. Version-tag publication depends on both workflows and requires
+CLI archives plus DMG/Debian/NSIS desktop installers, with matching versions and
+checksums. UI test reports are not release assets.
+
+From `desktop/`, run `npm ci`, `npm run format:check`, `npm run build`,
+`npx playwright install chromium webkit`, and `npm test`. Native checks use
+`cargo test --manifest-path src-tauri/Cargo.toml --locked` and the analogous
+formatting/Clippy commands. See [desktop setup](desktop.md) for system prerequisites
+and the installer build command.
