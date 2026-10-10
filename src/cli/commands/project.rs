@@ -25,6 +25,20 @@ pub enum ProjectCommands {
         #[arg(long)]
         path: Option<PathBuf>,
     },
+    /// Register an existing primary Git repository without changing files
+    Register {
+        name: String,
+        #[arg(long)]
+        path: PathBuf,
+        #[arg(long)]
+        space: Option<String>,
+    },
+    /// Unregister a project, preserving files, branches, and worktrees
+    Unregister {
+        name: String,
+        #[arg(long)]
+        space: Option<String>,
+    },
     /// List projects (optionally filtered by space)
     List {
         /// Filter by space name (defaults to active space)
@@ -83,8 +97,13 @@ pub fn run(args: ProjectArgs, ws: &mut spacer_core::Workspace) -> Result<()> {
     match args.command {
         ProjectCommands::Create { name, space, path } => {
             let space = resolve_space(space, ws)?;
-            ws.create_project(&name, &space, path)?;
+            ws.create_git_project(&name, &space, path)?;
             println!("Created project '{}' in space '{}'", name, space);
+        }
+        ProjectCommands::Register { name, path, space } => {
+            let space = resolve_space(space, ws)?;
+            ws.register_project(&name, &space, path)?;
+            println!("Registered project '{space}/{name}'");
         }
         ProjectCommands::List { space } => {
             let space = space.or_else(|| ws.active_space());
@@ -99,10 +118,12 @@ pub fn run(args: ProjectArgs, ws: &mut spacer_core::Workspace) -> Result<()> {
                 println!("{}", Table::new(rows).with(Style::sharp()));
             }
         }
-        ProjectCommands::Delete { name, space } => {
+        ProjectCommands::Delete { name, space } | ProjectCommands::Unregister { name, space } => {
             let space = resolve_space(space, ws)?;
             ws.delete_project(&name, &space)?;
-            println!("Deleted project '{}' from space '{}'", name, space);
+            println!(
+                "Unregistered project '{space}/{name}'; files, branches, and worktrees preserved"
+            );
         }
         ProjectCommands::Use { name, space } => {
             let space = resolve_space(space, ws)?;

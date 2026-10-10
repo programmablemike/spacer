@@ -62,7 +62,8 @@ implicit side effects. `create_project` creates a directory and record;
 `create_git_project` explicitly initializes Git in a new/empty directory, while
 `register_project` validates an existing primary non-bare repository. Likewise `start_change`
 and `finish_change` manage tracking, while `start_worktree` and `close_worktree`
-operate on real checkouts. CLI commands continue to use the tracking operations.
+operate on real checkouts. CLI commands use the Git lifecycle. Legacy tracking is exposed explicitly with
+`--tracked`, preserving old metadata without presenting it as a checkout.
 
 ## Data adapters
 
@@ -109,7 +110,7 @@ directories and real Git to check schema compatibility, worktree lifecycle, dirt
 checkout refusal, and external worktree paths. CLI tests spawn the binary to
 verify composition, persistence between invocations, and environment precedence.
 
-The existing JSON schema and metadata-based CLI behavior are preserved. Known
+Legacy tracking records remain in the versioned registry. Known
 limitations remain: no ancestor discovery, and no filesystem transaction spanning validation and mutation. Symlink checks
 assume project directories are not concurrently changed by an external process. Removing
 parents with tracked children is rejected; affected saved context is cleared. The architecture makes those policies central rather than fixing

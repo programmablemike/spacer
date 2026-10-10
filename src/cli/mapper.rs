@@ -155,3 +155,11 @@ mod tests {
         assert_eq!(rows[0].space, "alpha");
     }
 }
+
+#[derive(Tabled)]
+pub struct WorktreeRow {
+    pub space: String,
+    pub project: String,
+    pub branch: String,
+    pub path: String,
+}

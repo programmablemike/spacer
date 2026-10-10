@@ -35,10 +35,11 @@ fn cli_roundtrip_uses_shared_service_and_persists_each_operation() {
         ok(root, &["project", "go"]),
         path.canonicalize().unwrap().display().to_string()
     );
-    assert!(!path.join(".git").exists());
+    assert!(path.join(".git").exists());
+    initial_commit(&path);
     ok(root, &["change", "start", "feature", "--project", "web"]);
     assert!(ok(root, &["change", "list"]).contains("feature"));
-    assert!(!path.join("feature").exists());
+    assert!(root.join(".spacer/worktrees/alpha/web/feature").exists());
     ok(root, &["change", "finish", "feature", "--project", "web"]);
     ok(root, &["project", "delete", "web"]);
     assert!(path.is_dir());
@@ -91,12 +92,12 @@ fn scoped_context_and_parent_guards_survive_reopening() {
         .status
         .success());
     assert!(!ok(root, &["project", "list", "--space", "beta"]).contains('*'));
+    initial_commit(&root.join("alpha/web"));
     ok(root, &["change", "start", "feat/login", "--project", "web"]);
     let path = root.join(".spacer/config.json");
     let before = std::fs::read(&path).unwrap();
     for args in [
         &["space", "delete", "alpha"][..],
-        &["project", "delete", "web"][..],
         &["space", "create", "../escape"][..],
     ] {
         let result = cli(root, args);
@@ -130,4 +131,68 @@ fn malformed_relationships_do_not_rewrite_configuration() {
     assert!(String::from_utf8_lossy(&result.stderr).contains("missing space"));
     assert_eq!(std::fs::read_to_string(path).unwrap(), data);
     assert!(!root.join("new").exists());
+}
+
+fn initial_commit(path: &Path) {
+    let status = Command::new("git")
+        .args([
+            "-c",
+            "user.name=Test",
+            "-c",
+            "user.email=test@example.invalid",
+            "-c",
+            "commit.gpgsign=false",
+            "-c",
+            "core.hooksPath=/dev/null",
+            "commit",
+            "--allow-empty",
+            "-m",
+            "initial",
+        ])
+        .current_dir(path)
+        .output()
+        .unwrap();
+    assert!(
+        status.status.success(),
+        "{}",
+        String::from_utf8_lossy(&status.stderr)
+    );
+}
+
+#[test]
+fn unregister_preserves_real_worktrees_and_registration_rediscovers_them() {
+    let tmp = tempfile::tempdir().unwrap();
+    let root = tmp.path();
+    ok(root, &["space", "create", "alpha"]);
+    ok(root, &["space", "use", "alpha"]);
+    ok(root, &["project", "create", "web"]);
+    let path = root.join("alpha/web");
+    assert!(
+        !cli(root, &["change", "start", "feature", "--project", "web"])
+            .status
+            .success()
+    );
+    initial_commit(&path);
+    ok(root, &["change", "start", "feature", "--project", "web"]);
+    let tree = root.join(".spacer/worktrees/alpha/web/feature");
+    std::fs::write(tree.join("keep"), "keep").unwrap();
+    assert!(
+        !cli(root, &["change", "finish", "feature", "--project", "web"])
+            .status
+            .success()
+    );
+    assert!(tree.join("keep").exists());
+    ok(root, &["project", "unregister", "web"]);
+    assert!(tree.is_dir());
+    ok(
+        root,
+        &[
+            "project",
+            "register",
+            "web",
+            "--path",
+            path.to_str().unwrap(),
+        ],
+    );
+    assert!(ok(root, &["change", "list"]).contains("feature"));
 }

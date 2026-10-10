@@ -10,9 +10,9 @@ Organize and navigate your local development projects from the command line.
 Spacer groups projects into spaces and provides a terminal browser for your
 workspace.
 
-**Status: early development.** The CLI currently creates directories and tracks
-spaces, projects, and changes in JSON. Git repository and worktree operations
-exist in the shared Rust services and adapters but are not exposed by the CLI or TUI yet.
+**Status: alpha preparation.** Spacer creates and registers local Git repositories
+and manages linked worktrees. Finish preserves branches; unregister preserves
+files. See [recovery guidance](docs/how-to/recover-workspace.md) for legacy data.
 
 ## Install from source
 
@@ -64,17 +64,12 @@ code/
     └── website/
 ```
 
-`project create` creates a directory, not a Git repository. Initialize or clone
-repositories with Git separately.
-
-To track an existing project directory without moving it:
+`project create` initializes a new Git repository without making a commit.
+Register an existing primary repository without moving it:
 
 ```sh
-spacer project create existing-repo --space personal --path /absolute/path/to/repo
+spacer project register existing-repo --space personal --path /absolute/path/to/repo
 ```
-
-The path is recorded and the directory is created if missing. This command does
-not check whether the directory is a Git repository. Prefer absolute custom paths.
 
 ## Navigate from your shell
 
@@ -100,17 +95,19 @@ root; it does not search parent directories.
 
 ## Track changes
 
-A change is currently a named tracking entry within a project:
+A change is a linked Git worktree. Make an initial commit before starting one:
 
 ```sh
+git -C "$SPACER_ROOT/personal/website" commit --allow-empty -m "Initial commit"
 spacer change start feature-x --project website --space personal
 spacer change list --project website --space personal
 spacer change finish feature-x --project website --space personal
 ```
 
-`start` adds an entry to the workspace configuration. It does not create a branch
-or worktree. `finish` removes that entry and leaves Git branches and files alone.
-Use Git directly to manage the underlying work for now.
+`start` creates a branch and checkout under `.spacer/worktrees`. `finish` removes
+only a clean linked checkout and retains its branch and commits. Dirty, ignored,
+locked, and primary checkouts are refused. Legacy tracking entries are available
+through `change list --tracked` and `change finish NAME --project PROJECT --tracked`.
 
 ## Browse the workspace
 
@@ -136,8 +133,8 @@ It does not create objects or change the parent shell's directory.
 | --- | --- |
 | Workspace | Root directory containing `.spacer/config.json` |
 | Space | Named group of projects, usually an organization or personal collection |
-| Project | Named directory within a space, optionally at a custom path |
-| Change | Named record of work within a project |
+| Project | Registered primary Git repository within a space |
+| Change | Linked Git worktree within a project |
 
 Commands use explicit names and flags when provided. Otherwise, supported
 commands use environment overrides followed by saved defaults:
@@ -154,7 +151,7 @@ For command details, run `spacer --help` or a subcommand's `--help`.
 
 ## Current limitations
 
-- The CLI tracks metadata; Git automation is not integrated yet.
+- Clone, fetch, push, merge, and branch deletion remain user-managed Git operations.
 - `space delete` and `project delete` remove tracking records, not directories.
   They refuse removal while tracked children remain and clear affected saved
   selections. Finish tracked changes before removing a project, and remove

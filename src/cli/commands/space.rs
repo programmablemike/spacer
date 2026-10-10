@@ -24,7 +24,9 @@ pub enum SpaceCommands {
     },
     /// List all spaces
     List,
-    /// Remove an empty space registration, preserving files
+    /// Unregister an empty space, preserving its directory
+    Unregister { name: String },
+    /// Deprecated alias for unregister; preserves files
     Delete {
         /// Name of the space to delete
         name: String,
@@ -59,9 +61,9 @@ pub fn run(args: SpaceArgs, ws: &mut spacer_core::Workspace) -> Result<()> {
                 println!("{}", Table::new(rows).with(Style::sharp()));
             }
         }
-        SpaceCommands::Delete { name } => {
+        SpaceCommands::Delete { name } | SpaceCommands::Unregister { name } => {
             ws.delete_space(&name)?;
-            println!("Deleted space '{}'", name);
+            println!("Unregistered space '{name}'; files preserved");
         }
         SpaceCommands::Use { name } => {
             ws.set_active_space(&name)?;

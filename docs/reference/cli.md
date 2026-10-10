@@ -13,7 +13,7 @@ shared workspace service with JSON persistence. Tracking commands do not invoke 
 
 | Command | Effect |
 | --- | --- |
-| `workspace init` | Write empty configuration at the root if `.spacer` does not exist. If it exists, report already initialized after loading configuration; malformed configuration is an error. |
+| `workspace init` | Write empty configuration at the root if `config.json` does not exist. If it exists, report already initialized after loading configuration; malformed configuration is an error. |
 
 ## Spaces
 
@@ -30,7 +30,7 @@ shared workspace service with JSON persistence. Tracking commands do not invoke 
 
 | Command | Effect |
 | --- | --- |
-| `project create NAME [--space SPACE] [--path PATH]` | Record a project and create its directory; default path is `<space-path>/<name>`. Does not initialize Git. |
+| `project create NAME [--space SPACE] [--path PATH]` | Initialize Git in a new/empty directory and register it; default path is `<space-path>/<name>`. No initial commit. |
 | `project list [--space SPACE]` | List projects filtered by explicit/active space; list all if neither exists. |
 | `project use NAME [--space SPACE]` | Save the active project and its space together. |
 | `project current` | Print active project or a message that none is selected. |
@@ -41,9 +41,9 @@ shared workspace service with JSON persistence. Tracking commands do not invoke 
 
 | Command | Effect |
 | --- | --- |
-| `change start NAME --project PROJECT [--space SPACE]` | Add a tracking entry; does not create a branch or worktree. |
+| `change start NAME --project PROJECT [--space SPACE]` | Create a new branch and linked worktree from HEAD. |
 | `change list [--project PROJECT] [--space SPACE]` | List changes filtered by provided project and explicit/active space. Omitting project does not apply the active project. |
-| `change finish NAME --project PROJECT [--space SPACE]` | Remove the tracking entry; preserve Git branches, worktrees, and files. |
+| `change finish NAME --project PROJECT [--space SPACE]` | Remove a clean linked worktree; retain its branch and commits. |
 
 Deletion refuses parents with tracked children. Finish tracked changes before
 removing their project, and remove projects before removing their space.
@@ -67,3 +67,17 @@ back to `sh`. Unsupported values fail. The wrapper turns `space go` and
 
 The TUI reads a snapshot on startup. It cannot edit records, refresh live state,
 or navigate the parent shell. Restart it to reload the configuration.
+
+## Git lifecycle and compatibility
+
+`project register NAME --path PATH [--space SPACE]` registers an existing primary
+non-bare repository. `project unregister` and `space unregister` preserve files;
+legacy `delete` commands are aliases. Spaces must have no registered projects.
+
+`project create` initializes Git in a new/empty directory. Make the first commit
+with Git before `change start`. Change listing reads actual linked worktrees,
+including external and detached checkouts. Finish refuses primary, dirty,
+ignored-file-containing, locked, and detached worktrees, with no force option.
+
+`change list --tracked` and `change finish NAME --project PROJECT --tracked` are
+explicit metadata-only operations for legacy records. They do not touch Git.
