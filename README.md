@@ -1,8 +1,10 @@
 <p align="center">
-  <img src="logo.svg" alt="Spacer — an Asteroids-inspired vector ship and wordmark" width="640">
+  <img src="logo.svg" alt="Spacer — a grid of blocks with one yellow block docking into place" width="640">
 </p>
 
 # Spacer
+
+[Documentation](docs/README.md) · [Documentation index for LLMs](llms.txt)
 
 Organize and navigate your local development projects from the command line.
 Spacer groups projects into spaces and provides a terminal browser for your
@@ -177,8 +179,8 @@ cargo fmt --all -- --check
 cargo clippy --workspace --all-targets --locked -- -D warnings
 ```
 
-The visual identity uses simple vector geometry inspired by early asteroid
-arcade games. [logo.svg](logo.svg) is the wordmark;
+The visual identity represents organized project spaces: a four-by-four grid
+with one yellow block docking into place. [logo.svg](logo.svg) is the wordmark;
 [logo-icon.svg](logo-icon.svg) is the standalone icon. Both are self-contained SVGs.
 
 ## License

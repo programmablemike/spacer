@@ -1,18 +1,23 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128" role="img" aria-labelledby="title desc">
   <title id="title">Spacer icon</title>
-  <desc id="desc">A white wireframe spaceship fires two shots toward a jagged asteroid on a black arcade-style field.</desc>
-  <rect width="128" height="128" rx="20" fill="#101112"/>
-  <g fill="none" stroke="#f3f3eb" stroke-width="2.5" stroke-linejoin="miter">
-    <!-- Irregular, concave silhouette evokes a vector-arcade asteroid. -->
-    <path d="m70 16 22-5 18 14-8 12 11 13-19 14-12-12-16 6-9-20 13-9-8-7Z"/>
-    <!-- Narrow triangular hull, inset stern, and separate engine flame. -->
-    <g transform="translate(36 89) rotate(42)">
-      <path d="M0-23-14 14 0 8 14 14Z"/>
-      <path d="m-6 15 6 13 6-13" stroke-width="2"/>
-    </g>
+  <desc id="desc">A four-by-four grid with fifteen ivory blocks and one yellow block docking into the open slot in the third row.</desc>
+  <rect width="128" height="128" rx="22" fill="#242729"/>
+  <g fill="#faf9f4">
+    <rect x="18" y="26" width="16" height="16" rx="2"/>
+    <rect x="38" y="26" width="16" height="16" rx="2"/>
+    <rect x="58" y="26" width="16" height="16" rx="2"/>
+    <rect x="78" y="26" width="16" height="16" rx="2"/>
+    <rect x="18" y="46" width="16" height="16" rx="2"/>
+    <rect x="38" y="46" width="16" height="16" rx="2"/>
+    <rect x="58" y="46" width="16" height="16" rx="2"/>
+    <rect x="78" y="46" width="16" height="16" rx="2"/>
+    <rect x="18" y="66" width="16" height="16" rx="2"/>
+    <rect x="38" y="66" width="16" height="16" rx="2"/>
+    <rect x="58" y="66" width="16" height="16" rx="2"/>
+    <rect x="18" y="86" width="16" height="16" rx="2"/>
+    <rect x="38" y="86" width="16" height="16" rx="2"/>
+    <rect x="58" y="86" width="16" height="16" rx="2"/>
+    <rect x="78" y="86" width="16" height="16" rx="2"/>
   </g>
-  <g fill="#f3f3eb">
-    <circle cx="57" cy="66" r="1.7"/>
-    <circle cx="62" cy="61" r="1.7"/>
-  </g>
+  <rect x="94" y="66" width="16" height="16" rx="2" fill="#ffbf00"/>
 </svg>
