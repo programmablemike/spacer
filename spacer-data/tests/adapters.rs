@@ -182,3 +182,59 @@ fn git_failure_leaves_metadata_intact() {
         .is_err());
     assert_eq!(workspace(tmp.path()).snapshot(), before);
 }
+
+#[test]
+fn stale_writer_cannot_overwrite_newer_registry() {
+    let tmp = tempfile::tempdir().unwrap();
+    let mut first = workspace(tmp.path());
+    let mut second = workspace(tmp.path());
+    first.create_space("first", None).unwrap();
+    assert!(second
+        .create_space("second", None)
+        .unwrap_err()
+        .to_string()
+        .contains("changed since loading"));
+    let mut reopened = workspace(tmp.path());
+    assert_eq!(reopened.spaces().len(), 1);
+    reopened.create_space("second", None).unwrap();
+    assert_eq!(workspace(tmp.path()).spaces().len(), 2);
+}
+
+#[test]
+fn concurrent_registry_writers_preserve_one_update_and_report_conflict() {
+    let tmp = tempfile::tempdir().unwrap();
+    let barrier = std::sync::Arc::new(std::sync::Barrier::new(2));
+    let handles: Vec<_> = ["first", "second"]
+        .into_iter()
+        .map(|name| {
+            let root = tmp.path().to_owned();
+            let barrier = barrier.clone();
+            std::thread::spawn(move || {
+                let mut ws = workspace(&root);
+                barrier.wait();
+                ws.create_space(name, None)
+            })
+        })
+        .collect();
+    let results: Vec<_> = handles.into_iter().map(|h| h.join().unwrap()).collect();
+    assert_eq!(results.iter().filter(|r| r.is_ok()).count(), 1);
+    assert_eq!(workspace(tmp.path()).spaces().len(), 1);
+}
+
+#[test]
+fn unsupported_schema_and_abandoned_temporary_file_preserve_configuration() {
+    let tmp = tempfile::tempdir().unwrap();
+    let mut ws = workspace(tmp.path());
+    ws.create_space("keep", None).unwrap();
+    let path = tmp.path().join(".spacer/config.json");
+    let before = std::fs::read(&path).unwrap();
+    std::fs::write(tmp.path().join(".spacer/.tmp-interrupted"), "partial").unwrap();
+    assert_eq!(workspace(tmp.path()).spaces().len(), 1);
+    assert_eq!(std::fs::read(&path).unwrap(), before);
+    let future = r#"{"schema_version":999,"spaces":[],"projects":[],"changes":[]}"#;
+    std::fs::write(&path, future).unwrap();
+    let registry = JsonRegistry::new(tmp.path());
+    assert!(registry.load().is_err());
+    assert!(registry.save(&Default::default()).is_err());
+    assert_eq!(std::fs::read_to_string(path).unwrap(), future);
+}
