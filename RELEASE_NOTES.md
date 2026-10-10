@@ -28,16 +28,16 @@ the tagged revision. The workflow logs record OS, Rust, Git, and shell versions;
 Rust is pinned to 1.94.0. macOS terminal tests explicitly exercise bundled Bash
 3.2 as well as zsh. Windows interactive TUI behavior has no automated PTY coverage.
 
-See [installation](docs/how-to/install.md), the
-[tutorial](docs/tutorials/first-workspace.md), and
-[release verification](docs/how-to/verify-release.md).
+See [installation](https://github.com/programmablemike/spacer/blob/v0.0.1/docs/how-to/install.md), the
+[tutorial](https://github.com/programmablemike/spacer/blob/v0.0.1/docs/tutorials/first-workspace.md), and
+[release verification](https://github.com/programmablemike/spacer/blob/v0.0.1/docs/how-to/verify-release.md).
 
 ## Compatibility and recovery
 
 The initial alpha uses version 0.0.1; the previous 0.1.0 package metadata did not
 represent a beta release. The libraries now use separate Registry, Filesystem,
 and Git ports with the Workspace application service. The previous Backend/store
-API is removed; see [API migration](docs/reference/rust-api.md).
+API is removed; see [API migration](https://github.com/programmablemike/spacer/blob/v0.0.1/docs/reference/rust-api.md).
 
 The CLI now performs real Git worktree operations. Legacy metadata-only changes
 remain accessible through `--tracked`. `project delete` and `space delete` are
@@ -46,7 +46,7 @@ deprecated aliases for unregistering and preserve files.
 Valid unversioned configuration with absolute paths loads read-only and upgrades
 to schema 1 on the next successful mutation. Unknown fields/schemas, relative
 legacy paths, or former `.spacer/state.json` require explicit reconciliation.
-Back up metadata and follow [recovery guidance](docs/how-to/recover-workspace.md).
+Back up metadata and follow [recovery guidance](https://github.com/programmablemike/spacer/blob/v0.0.1/docs/how-to/recover-workspace.md).
 
 ## Alpha limitations
 
