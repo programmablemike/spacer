@@ -3,13 +3,33 @@ use spacer_core::{ports::Filesystem, ContextOverrides, Workspace};
 use spacer_data::{GitCli, JsonRegistry, LocalFilesystem};
 use std::path::PathBuf;
 
-pub fn open_workspace() -> Result<Workspace> {
-    let root = match std::env::var("SPACER_ROOT") {
-        Ok(root) if !root.is_empty() => PathBuf::from(root),
-        Ok(_) => anyhow::bail!("SPACER_ROOT must not be empty"),
-        Err(_) => std::env::current_dir().context("failed to determine current directory")?,
+pub fn open_workspace(initialize: bool) -> Result<Workspace> {
+    let cwd = std::env::current_dir().context("failed to determine current directory")?;
+    let explicit = std::env::var_os("SPACER_ROOT");
+    let root = if let Some(root) = explicit {
+        anyhow::ensure!(!root.is_empty(), "SPACER_ROOT must not be empty");
+        LocalFilesystem.normalize(&PathBuf::from(root))?
+    } else if initialize {
+        LocalFilesystem.normalize(&cwd)?
+    } else {
+        let mut found = None;
+        for ancestor in cwd.ancestors() {
+            if ancestor.join(".spacer").try_exists()? {
+                found = Some(ancestor.to_path_buf());
+                break;
+            }
+        }
+        LocalFilesystem.normalize(
+            &found.context("no workspace found; run `spacer workspace init` or set SPACER_ROOT")?,
+        )?
     };
-    let root = LocalFilesystem.normalize(&root)?;
+    if !initialize {
+        anyhow::ensure!(
+            root.join(".spacer/config.json").try_exists()?,
+            "workspace '{}' is not initialized; run `spacer workspace init`",
+            root.display()
+        );
+    }
     let context = ContextOverrides {
         space: std::env::var("SPACER_SPACE").ok(),
         project: std::env::var("SPACER_PROJECT").ok(),

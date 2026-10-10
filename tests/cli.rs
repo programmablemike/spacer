@@ -63,6 +63,7 @@ fn shell_does_not_load_workspace_and_corrupt_state_errors_before_tui_setup() {
 fn environment_context_is_resolved_at_boundary_without_changing_defaults() {
     let tmp = tempfile::tempdir().unwrap();
     let root = tmp.path();
+    ok(root, &["workspace", "init"]);
     ok(root, &["space", "create", "saved"]);
     ok(root, &["space", "use", "saved"]);
     ok(root, &["space", "create", "session"]);
@@ -82,6 +83,7 @@ fn environment_context_is_resolved_at_boundary_without_changing_defaults() {
 fn scoped_context_and_parent_guards_survive_reopening() {
     let tmp = tempfile::tempdir().unwrap();
     let root = tmp.path();
+    ok(root, &["workspace", "init"]);
     for space in ["alpha", "beta"] {
         ok(root, &["space", "create", space]);
         ok(root, &["project", "create", "web", "--space", space]);
@@ -163,6 +165,7 @@ fn initial_commit(path: &Path) {
 fn unregister_preserves_real_worktrees_and_registration_rediscovers_them() {
     let tmp = tempfile::tempdir().unwrap();
     let root = tmp.path();
+    ok(root, &["workspace", "init"]);
     ok(root, &["space", "create", "alpha"]);
     ok(root, &["space", "use", "alpha"]);
     ok(root, &["project", "create", "web"]);
@@ -195,4 +198,104 @@ fn unregister_preserves_real_worktrees_and_registration_rediscovers_them() {
         ],
     );
     assert!(ok(root, &["change", "list"]).contains("feature"));
+}
+
+fn from_directory(cwd: &Path, root: Option<&Path>, args: &[&str]) -> Output {
+    let mut cmd = Command::new(env!("CARGO_BIN_EXE_spacer"));
+    cmd.current_dir(cwd)
+        .args(args)
+        .env_remove("SPACER_ROOT")
+        .env_remove("SPACER_SPACE")
+        .env_remove("SPACER_PROJECT");
+    if let Some(root) = root {
+        cmd.env("SPACER_ROOT", root);
+    }
+    cmd.output().unwrap()
+}
+
+#[test]
+fn discovery_prefers_nearest_workspace_and_explicit_roots_never_fall_back() {
+    let tmp = tempfile::tempdir().unwrap();
+    let root = tmp.path();
+    assert!(!from_directory(root, None, &["space", "list"])
+        .status
+        .success());
+    ok(root, &["workspace", "init"]);
+    ok(root, &["space", "create", "alpha"]);
+    ok(root, &["project", "create", "web", "--space", "alpha"]);
+    ok(root, &["project", "use", "web", "--space", "alpha"]);
+    let project = root.join("alpha/web");
+    initial_commit(&project);
+    ok(root, &["change", "start", "feat/login", "--project", "web"]);
+    let tree = root.join(".spacer/worktrees/alpha/web/feat/login");
+    for cwd in [
+        root.to_owned(),
+        root.join("alpha"),
+        project.clone(),
+        tree.clone(),
+    ] {
+        let output = from_directory(&cwd, None, &["project", "current"]);
+        assert!(output.status.success());
+        assert_eq!(String::from_utf8(output.stdout).unwrap().trim(), "web");
+    }
+    assert_eq!(
+        ok(root, &["path", "change", "feat/login"]),
+        tree.canonicalize().unwrap().display().to_string()
+    );
+    assert_eq!(
+        ok(root, &["go", "alpha/web/feat/login"]),
+        tree.canonicalize().unwrap().display().to_string()
+    );
+    assert!(
+        !from_directory(&project, Some(&root.join("missing")), &["project", "list"])
+            .status
+            .success()
+    );
+    assert!(from_directory(&project, None, &["workspace", "init"])
+        .status
+        .success());
+    let output = from_directory(&project, None, &["project", "current"]);
+    assert!(String::from_utf8_lossy(&output.stdout).contains("No active project"));
+    std::fs::write(project.join(".spacer/config.json"), "broken").unwrap();
+    assert!(!from_directory(&project, None, &["project", "list"])
+        .status
+        .success());
+    assert!(from_directory(&project, Some(root), &["project", "list"])
+        .status
+        .success());
+}
+
+#[test]
+fn navigation_uses_external_git_paths_and_rejects_missing_checkouts() {
+    let tmp = tempfile::tempdir().unwrap();
+    let root = tmp.path();
+    ok(root, &["workspace", "init"]);
+    ok(root, &["space", "create", "alpha"]);
+    ok(root, &["project", "create", "web", "--space", "alpha"]);
+    ok(root, &["project", "use", "web", "--space", "alpha"]);
+    let project = root.join("alpha/web");
+    initial_commit(&project);
+    let external = root.join("custom checkout");
+    assert!(Command::new("git")
+        .current_dir(&project)
+        .args([
+            "worktree",
+            "add",
+            "-b",
+            "external",
+            external.to_str().unwrap()
+        ])
+        .output()
+        .unwrap()
+        .status
+        .success());
+    assert_eq!(
+        ok(root, &["path", "change", "external"]),
+        external.canonicalize().unwrap().display().to_string()
+    );
+    std::fs::rename(&external, root.join("moved checkout")).unwrap();
+    let output = cli(root, &["path", "change", "external"]);
+    assert!(!output.status.success());
+    assert!(output.stdout.is_empty());
+    assert!(String::from_utf8_lossy(&output.stderr).contains("missing"));
 }

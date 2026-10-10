@@ -6,7 +6,7 @@
 
 | Variable | Behavior |
 | --- | --- |
-| `SPACER_ROOT` | Workspace root when set; otherwise the current directory. Use an absolute path. |
+| `SPACER_ROOT` | Authoritative workspace root when set; otherwise search current directory and ancestors. |
 | `SPACER_SPACE` | Nonempty value overrides the saved active space. |
 | `SPACER_PROJECT` | Nonempty value overrides the saved active project where a command accepts that default. |
 | `SHELL` | Selects shell integration output when the shell argument is omitted. |
@@ -14,7 +14,10 @@
 Explicit command arguments take precedence over valid environment and saved defaults.
 Session overrides are validated when opening the workspace, even for commands
 with explicit flags; unknown overrides fail with instructions to correct or
-unset them. No workspace ancestor search or checkout inference is performed.
+unset them. The nearest ancestor containing `.spacer` is selected; malformed nearest metadata
+is an error. An explicit root never falls back elsewhere. `workspace init` uses
+the explicit root or current directory without ancestor discovery. Other commands
+require initialized configuration.
 
 The saved `active_space` and `active_project` form a pair. Selecting a project
 sets both fields; changing the saved space clears its project selection. A space
@@ -85,7 +88,8 @@ There is no separate command to clear saved context.
 
 Custom paths can point outside the root. New implicit paths must stay within their canonical parent; explicit paths may
 be external but cannot overlap workspace metadata. Two project records cannot
-use the same canonical directory. Navigation paths are not yet checked for existence. These are
+use the same canonical directory. Navigation validates directory existence and uses actual Git worktree paths;
+missing or detached checkouts require explicit Git repair or management. These are
 current constraints, not guarantees of safe arbitrary filesystem operations.
 
 The Git adapter performs Git operations only; it does not own registration or

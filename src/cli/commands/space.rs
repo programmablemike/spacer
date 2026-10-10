@@ -79,12 +79,7 @@ pub fn run(args: SpaceArgs, ws: &mut spacer_core::Workspace) -> Result<()> {
                     "no space specified — pass a name or set one with `spacer space use <name>`"
                 )
             })?;
-            let space = ws
-                .spaces()
-                .iter()
-                .find(|s| s.name == name)
-                .ok_or_else(|| anyhow::anyhow!("space '{}' not found", name))?;
-            print!("{}", space.path.display());
+            print!("{}", ws.space_path(&name)?.display());
         }
     }
 
