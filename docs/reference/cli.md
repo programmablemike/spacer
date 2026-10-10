@@ -2,102 +2,102 @@
 
 [Documentation](../README.md) / Reference
 
-Syntax: `spacer [COMMAND]`. Square brackets below indicate optional arguments;
-uppercase words are placeholders. `spacer --help` and each subcommand's `--help`
-provide built-in help. `spacer --version` prints the package version.
+Syntax: `spacer [COMMAND]`. Square brackets indicate optional arguments;
+uppercase words are placeholders. Use a subcommand's `--help` for built-in help,
+and `spacer --version` for the version. With no command, Spacer opens the TUI.
 
-With no command, Spacer opens the read-only TUI. All commands below use the
-shared workspace service with JSON persistence. Tracking commands do not invoke Git.
+Workspace commands share the application service and versioned JSON registry.
+Repository creation and worktree commands invoke Git. Explicit legacy tracking
+operations use metadata only.
 
-## Workspace
-
-| Command | Effect |
-| --- | --- |
-| `workspace init` | Write empty configuration at the root if `config.json` does not exist. If it exists, report already initialized after loading configuration; malformed configuration is an error. |
-
-## Spaces
+## Workspace and spaces
 
 | Command | Effect |
 | --- | --- |
-| `space create NAME [--path PATH]` | Record a space and create its directory if needed; default path is `<root>/<name>`. |
-| `space list` | List spaces and mark the active name. |
-| `space use NAME` | Save the active space; clear the saved project when the space changes. |
-| `space current` | Print active space or a message that none is selected. |
-| `space go [NAME]` | Print named/active space path. |
-| `space delete NAME` | Remove an empty space record, preserving files and clearing its selection. |
+| `workspace init` | Initialize the explicit root or current directory. Preserve valid existing state; refuse malformed state. |
+| `space create NAME [--path PATH]` | Create/register a directory; default `<root>/<name>`. |
+| `space list` | List spaces and mark the effective active space. |
+| `space use NAME` | Save the active space; clear the saved project if space changes. |
+| `space current` | Print the active space, or report none selected. |
+| `space go [NAME]` | Print the existing named/active space path; navigate with shell integration. |
+| `space unregister NAME` | Remove a registration with no projects; preserve its directory and clear its selection. |
+| `space delete NAME` | Deprecated alias for unregister. |
 
 ## Projects
 
 | Command | Effect |
 | --- | --- |
-| `project create NAME [--space SPACE] [--path PATH]` | Initialize Git in a new/empty directory and register it; default path is `<space-path>/<name>`. No initial commit. |
-| `project list [--space SPACE]` | List projects filtered by explicit/active space; list all if neither exists. |
-| `project use NAME [--space SPACE]` | Save the active project and its space together. |
-| `project current` | Print active project or a message that none is selected. |
-| `project go [NAME] [--space SPACE]` | Print the named/active project's path in the resolved space. |
-| `project delete NAME [--space SPACE]` | Remove a project without tracked changes, preserving files and clearing its selection. |
+| `project create NAME [--space SPACE] [--path PATH]` | Initialize Git in a new/empty directory and register it; default `<space-path>/<name>`. No initial commit. |
+| `project register NAME --path PATH [--space SPACE]` | Register an existing primary non-bare Git repository without changing its files. |
+| `project list [--space SPACE]` | Filter by explicit/active space; list all if neither exists. |
+| `project use NAME [--space SPACE]` | Save the active project and space together. |
+| `project current` | Print the active project, or report none selected. |
+| `project go [NAME] [--space SPACE]` | Print the existing named/active project path; navigate with shell integration. |
+| `project unregister NAME [--space SPACE]` | Remove registration and affected selection; preserve repositories, branches, and worktrees. Refuse while legacy tracking entries remain. |
+| `project delete NAME [--space SPACE]` | Deprecated alias for unregister. |
+
+There is no recursive project/space deletion command. Selecting defaults uses
+`space use` and `project use`; session overrides never change saved selections.
+See [configuration](configuration.md).
 
 ## Changes
 
 | Command | Effect |
 | --- | --- |
-| `change start NAME --project PROJECT [--space SPACE]` | Create a new branch and linked worktree from HEAD. |
-| `change list [--project PROJECT] [--space SPACE]` | List changes filtered by provided project and explicit/active space. Omitting project does not apply the active project. |
+| `change start NAME --project PROJECT [--space SPACE]` | Create a new branch and linked worktree from the project's HEAD. Require an initial commit. |
+| `change list [--project PROJECT] [--space SPACE]` | Query actual linked worktrees, including external paths and detached checkouts. Omitting project lists across projects in the explicit/active space, or all spaces if none selected. |
 | `change finish NAME --project PROJECT [--space SPACE]` | Remove a clean linked worktree; retain its branch and commits. |
+| `change list --tracked [--project PROJECT] [--space SPACE]` | List legacy metadata tracking entries without querying Git. |
+| `change finish NAME --tracked --project PROJECT [--space SPACE]` | Remove only a legacy tracking entry. |
 
-Deletion refuses parents with tracked children. Finish tracked changes before
-removing their project, and remove projects before removing their space.
-See [configuration](configuration.md) for context resolution.
+Start refuses existing branches or target directories. New checkouts live under
+`<root>/.spacer/worktrees/<space>/<project>/<branch>`; branch names can contain
+slashes. Existing Git checkout paths remain authoritative.
 
-## Shell integration
+Finish refuses modified, untracked, ignored-file-containing, locked, primary,
+and detached checkouts. It has no force option. Git branches survive even when
+commits have not been merged. Do not edit a checkout concurrently with finishing
+it. See [recovery](../how-to/recover-workspace.md) after any partial failure.
 
-`spacer shell integration [SHELL]` emits a wrapper for `zsh`, `bash`, or `sh`. If omitted,
-SHELL is inferred from the basename of the `SHELL` environment variable, falling
-back to `sh`. Unsupported values fail. The wrapper turns `space go` and
-`project go` into directory changes. See [setup](../how-to/shell-navigation.md).
+## Paths and navigation
+
+| Command | Effect |
+| --- | --- |
+| `path space [NAME]` | Print the existing named/active space path. |
+| `path project [NAME] [--space SPACE]` | Print the existing named/active project path. |
+| `path change NAME [--project PROJECT] [--space SPACE]` | Print the existing Git checkout path for the named branch. |
+| `go SPACE[/PROJECT[/CHANGE]]` | Resolve a fully named target; navigate with shell integration. The change can contain slashes. |
+
+Path output contains only the path, without a trailing newline. Resolution errors
+return nonzero with no path on stdout. Detached worktrees require Git directly.
+
+## Shells and completions
+
+`spacer shell [--shell PATH]` launches a managed interactive shell on macOS/Linux.
+It requires an initialized workspace and terminal, exports an absolute root, and
+refuses nesting. Bash/zsh receive navigation, a prompt indicator, and completions.
+POSIX sh receives environment variables only. Windows has no managed shell.
+
+`spacer shell integration [SHELL]` emits a navigation wrapper for bash/zsh/sh,
+without opening a workspace. The omitted shell comes from the basename of
+`SHELL`, falling back to sh. Unsupported shells fail. The wrapper intercepts
+`go`, `space go`, and `project go`; failure preserves the current directory.
+
+`spacer completions SHELL` emits bash/zsh/fish completion scripts without opening
+a workspace. See [shell setup](../how-to/shell-navigation.md) for startup details
+and Windows path navigation.
 
 ## Terminal browser
 
 | Key | Action |
 | --- | --- |
 | `Tab` | Cycle spaces/projects/changes tabs |
-| `j` / `↓` | Move selection down |
-| `k` / `↑` | Move selection up |
+| `j` / `↓` | Move down |
+| `k` / `↑` | Move up |
 | `q` / `Ctrl-C` | Exit |
 
-The TUI reads a snapshot on startup. It cannot edit records, refresh live state,
-or navigate the parent shell. Restart it to reload the configuration.
-
-## Git lifecycle and compatibility
-
-`project register NAME --path PATH [--space SPACE]` registers an existing primary
-non-bare repository. `project unregister` and `space unregister` preserve files;
-legacy `delete` commands are aliases. Spaces must have no registered projects.
-
-`project create` initializes Git in a new/empty directory. Make the first commit
-with Git before `change start`. Change listing reads actual linked worktrees,
-including external and detached checkouts. Finish refuses primary, dirty,
-ignored-file-containing, locked, and detached worktrees, with no force option.
-
-`change list --tracked` and `change finish NAME --project PROJECT --tracked` are
-explicit metadata-only operations for legacy records. They do not touch Git.
-
-## Path resolution
-
-`path space [NAME]`, `path project [NAME] [--space SPACE]`, and
-`path change NAME [--project PROJECT] [--space SPACE]` print validated paths only.
-`go SPACE[/PROJECT[/CHANGE]]` resolves the same paths, including branch names
-containing slashes. Git-reported locations are authoritative. Missing directories
-fail with nonzero status and no path output. Detached worktrees require Git directly.
-
-`spacer shell [--shell PATH]` starts an interactive managed shell on macOS/Linux.
-It exports the absolute workspace root and refuses nested sessions. Bash/zsh
-load user startup files and then install navigation and static completions. Zsh
-respects `ZDOTDIR`; sh receives environment only. `spacer completions SHELL`
-prints bash/zsh/fish completion scripts without opening a workspace. Windows
-users use `path` with their shell's directory-changing command.
-
-The TUI loads registered repositories and their Git worktrees before entering
-raw mode. It displays detached checkouts and labels legacy tracking separately.
-Read errors abort startup without changing terminal modes. Normal exit, startup
-failure and panic restore the terminal; the view remains a read-only snapshot.
+The TUI loads the registry and registered repositories' Git worktrees before
+entering raw mode. It displays detached checkout paths, empty states, and legacy
+tracking separately. Read errors abort startup. It restores terminal modes on
+exit and panic. It is a read-only snapshot: restart to refresh. It cannot mutate
+records or change the parent shell's directory.

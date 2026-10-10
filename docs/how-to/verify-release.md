@@ -5,7 +5,7 @@
 Pull requests and main run the reusable Quality workflow on macOS ARM64/x86-64,
 Linux ARM64/x86-64, and Windows x86-64. Each native runner executes formatting,
 Clippy, workspace tests, a fresh source installation, and an installed-binary
-lifecycle. POSIX runners also exercise bash/zsh/sh sessions and TUI restoration
+lifecycle. POSIX runners execute the tutorial commands from the documentation and exercise bash/zsh/sh sessions and TUI restoration
 through pseudo-terminals. Runner labels follow the [GitHub runner reference](https://docs.github.com/en/actions/reference/runners/github-hosted-runners).
 
 `tests/smoke.py BINARY` runs the fresh-workspace lifecycle against an installed
@@ -27,7 +27,9 @@ cargo clippy --workspace --all-targets --locked -- -D warnings
 cargo test --workspace --locked
 cargo build --release --locked
 python3 tests/smoke.py target/release/spacer
+python3 tests/tutorial.py target/release/spacer
 python3 tests/terminal.py target/release/spacer
 ```
 
-Windows uses `target/release/spacer.exe` and omits the POSIX terminal test.
+Windows uses `target/release/spacer.exe` and omits the POSIX tutorial and terminal tests. CI uses native archives built by
+`scripts/package.py`; the former cargo-dist configuration is no longer used.

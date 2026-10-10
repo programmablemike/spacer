@@ -7,3 +7,5 @@
 /.spacer/
 
 /dist/
+
+__pycache__/

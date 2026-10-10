@@ -3,7 +3,7 @@ members = [".", "spacer-core", "spacer-data"]
 
 [package]
 name = "spacer"
-version = "0.1.0"
+version = "0.0.1"
 edition = "2021"
 description = "A CLI and TUI tool for managing multiple code projects"
 license = "MIT"
@@ -29,8 +29,3 @@ tempfile = "3"
 [profile.release]
 strip = true
 opt-level = 3
-
-# The profile that 'dist' will build with
-[profile.dist]
-inherits = "release"
-lto = "thin"

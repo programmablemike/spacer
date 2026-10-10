@@ -47,7 +47,7 @@ included in this implementation.
   existence checks, portable name validation, parent-child integrity, operation
   ordering, metadata-only deletion semantics, scoped active context, and
   primary-worktree protection.
-- `ports/`: outbound interfaces for registry persistence, directory creation,
+- `ports/`: outbound interfaces for registry persistence, path validation and directory creation,
   and Git operations. Concrete adapters implement these interfaces.
 - `error.rs`: typed error categories that presentation adapters can distinguish
   without parsing a display string.
@@ -73,7 +73,7 @@ serve complementary purposes:
 | Adapter | Port | Responsibility |
 | --- | --- | --- |
 | `JsonRegistry` | `Registry` | Convert between domain snapshots and the existing `.spacer/config.json` schema; load and save it. |
-| `LocalFilesystem` | `Filesystem` | Create directories requested by a use case. |
+| `LocalFilesystem` | `Filesystem` | Normalize paths, inspect directories, and create directories requested by a use case. |
 | `GitCli` | `Git` | Initialize repositories; list, add, and remove Git worktrees through subprocesses. |
 
 JSON DTOs and Serde belong to the registry adapter. The Git adapter has no active
@@ -90,9 +90,12 @@ thread and serialize access to a mutable service instance.
 ## Example operation: create a project
 
 1. The CLI parses a name, optional space, and optional path.
-2. The service resolves the registered parent and rejects duplicates.
-3. The filesystem adapter creates the directory.
-4. The registry adapter saves the proposed updated snapshot.
+2. `create_git_project` resolves the parent, validates the name and canonical
+   path, and refuses duplicates or a nonempty target.
+3. The filesystem adapter creates the directory and Git initializes a repository.
+   Spacer does not create an initial commit.
+4. The registry adapter saves the proposed snapshot using atomic replacement
+   under a lock, rejecting changes made by another writer since loading.
 5. Only after a successful save does the service replace its in-memory state.
 6. The CLI prints success.
 
@@ -113,8 +116,7 @@ verify composition, persistence between invocations, and environment precedence.
 Legacy tracking records remain in the versioned registry. Known
 limitations remain: no filesystem transaction spanning validation and mutation. Symlink checks
 assume project directories are not concurrently changed by an external process. Removing
-parents with tracked children is rejected; affected saved context is cleared. The architecture makes those policies central rather than fixing
-all of them as part of the structural refactor.
+parents with tracked children is rejected; affected saved context is cleared. Policies are centralized in the service and tested independently of adapters.
 
 The previous interchangeable `Backend`/store adapters have been removed. See the
 [Rust API reference and migration notes](../reference/rust-api.md) for construction,

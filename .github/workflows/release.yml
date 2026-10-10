@@ -35,4 +35,6 @@ jobs:
         run: |
           flags=()
           if [[ "$RELEASE_TAG" == v0.* ]]; then flags+=(--prerelease); fi
-          gh release create "$RELEASE_TAG" --verify-tag "${flags[@]}" --title "Spacer $RELEASE_TAG" --notes-file RELEASE_NOTES.md dist/*
+          title="Spacer $RELEASE_TAG"
+          if [[ "$RELEASE_TAG" == v0.0.* ]]; then title+=" (alpha)"; fi
+          gh release create "$RELEASE_TAG" --verify-tag "${flags[@]}" --title "$title" --notes-file RELEASE_NOTES.md dist/*
