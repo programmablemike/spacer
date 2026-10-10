@@ -21,9 +21,10 @@ ratatui = "0.29"
 crossterm = "0.28"
 anyhow = "1"
 tabled = "0.17"
-
-[dev-dependencies]
+clap_complete = "4"
+libc = "0.2"
 tempfile = "3"
+
 
 [profile.release]
 strip = true

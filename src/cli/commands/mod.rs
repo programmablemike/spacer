@@ -6,3 +6,5 @@ pub mod workspace;
 
 pub mod go;
 pub mod path;
+
+pub mod completions;

@@ -1,5 +1,5 @@
 use anyhow::Result;
-use clap::Parser;
+use clap::{CommandFactory, Parser};
 
 mod cli;
 mod composition;
@@ -9,6 +9,9 @@ use cli::{Cli, Commands};
 
 fn main() -> Result<()> {
     let cli = Cli::parse();
+    if let Some(Commands::Completions(args)) = cli.command {
+        return cli::commands::completions::run(args, &mut Cli::command());
+    }
     // Shell integration needs no workspace and must work outside an initialized root.
     if let Some(Commands::Shell(args)) = cli.command {
         return cli::commands::shell::run(args);
@@ -22,7 +25,7 @@ fn main() -> Result<()> {
         Some(Commands::Path(args)) => cli::commands::path::run(args, &workspace),
         Some(Commands::Go(args)) => cli::commands::go::run(args, &workspace),
         Some(Commands::Change(args)) => cli::commands::change::run(args, &mut workspace),
-        Some(Commands::Shell(_)) => unreachable!(),
-        None => tui::run(workspace.snapshot()),
+        Some(Commands::Shell(_) | Commands::Completions(_)) => unreachable!(),
+        None => tui::run(workspace.view()?),
     }
 }

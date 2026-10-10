@@ -93,6 +93,26 @@ impl Workspace {
         }
     }
 
+    pub fn view(&self) -> Result<crate::WorkspaceView> {
+        let mut worktrees = Vec::new();
+        for project in &self.state.projects {
+            for tree in self
+                .worktrees(&project.name, &project.space)?
+                .into_iter()
+                .filter(|w| !w.is_primary)
+            {
+                worktrees.push(crate::ProjectWorktree {
+                    space: project.space.clone(),
+                    project: project.name.clone(),
+                    worktree: tree,
+                });
+            }
+        }
+        Ok(crate::WorkspaceView {
+            registry: self.snapshot(),
+            worktrees,
+        })
+    }
     fn persist(&mut self, next: WorkspaceSnapshot) -> Result<()> {
         self.registry.save(&next)?;
         self.state = next;

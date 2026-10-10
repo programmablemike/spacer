@@ -15,9 +15,9 @@ Add the appropriate integration line to your shell's startup file:
 
 | Shell | File | Line |
 | --- | --- | --- |
-| zsh | `~/.zshrc` | `eval "$(spacer shell zsh)"` |
-| bash | `~/.bashrc` | `eval "$(spacer shell bash)"` |
-| sh | `~/.profile` | `eval "$(spacer shell sh)"` |
+| zsh | `~/.zshrc` | `eval "$(spacer shell integration zsh)"` |
+| bash | `~/.bashrc` | `eval "$(spacer shell integration bash)"` |
+| sh | `~/.profile` | `eval "$(spacer shell integration sh)"` |
 
 Also export `SPACER_ROOT` there if you want the same workspace in future sessions.
 Start a new shell or source the startup file. With `personal` and `website`
@@ -46,3 +46,8 @@ Other shells can consume printed paths using their own directory-changing syntax
 If projects disappear after navigation, check `SPACER_ROOT`. Without that
 variable, each invocation treats its current directory as the workspace root;
 there is no ancestor search. See [configuration](../reference/configuration.md).
+
+For a temporary managed session, run `spacer shell` from an initialized workspace
+and `exit` to leave it. `spacer go SPACE/PROJECT/CHANGE` supports branch names
+containing slashes. Resolution failures preserve the current directory and return
+a nonzero status; no directory change is attempted.

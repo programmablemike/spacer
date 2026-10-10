@@ -78,9 +78,9 @@ Load the wrapper to make them change your shell's current directory:
 
 | Shell | Add to your startup file |
 | --- | --- |
-| zsh (`~/.zshrc`) | `eval "$(spacer shell zsh)"` |
-| bash (`~/.bashrc`) | `eval "$(spacer shell bash)"` |
-| sh (`~/.profile`) | `eval "$(spacer shell sh)"` |
+| zsh (`~/.zshrc`) | `eval "$(spacer shell integration zsh)"` |
+| bash (`~/.bashrc`) | `eval "$(spacer shell integration bash)"` |
+| sh (`~/.profile`) | `eval "$(spacer shell integration sh)"` |
 
 Restart your shell or source the appropriate file, then run:
 

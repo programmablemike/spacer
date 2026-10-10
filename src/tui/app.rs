@@ -1,4 +1,4 @@
-use spacer_core::WorkspaceSnapshot;
+use spacer_core::{ProjectWorktree, WorkspaceSnapshot, WorkspaceView};
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Tab {
@@ -29,14 +29,16 @@ impl Tab {
 
 pub struct App {
     pub snapshot: WorkspaceSnapshot,
+    pub worktrees: Vec<ProjectWorktree>,
     pub active_tab: Tab,
     pub selected: usize,
 }
 
 impl App {
-    pub fn new(snapshot: WorkspaceSnapshot) -> Self {
+    pub fn new(view: WorkspaceView) -> Self {
         Self {
-            snapshot,
+            snapshot: view.registry,
+            worktrees: view.worktrees,
             active_tab: Tab::Spaces,
             selected: 0,
         }
@@ -65,7 +67,7 @@ impl App {
         match self.active_tab {
             Tab::Spaces => self.snapshot.spaces.len(),
             Tab::Projects => self.snapshot.projects.len(),
-            Tab::Changes => self.snapshot.changes.len(),
+            Tab::Changes => self.snapshot.changes.len() + self.worktrees.len(),
         }
     }
 }

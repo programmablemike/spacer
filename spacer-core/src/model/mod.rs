@@ -50,3 +50,15 @@ pub struct Worktree {
     pub branch: Option<String>,
     pub is_primary: bool,
 }
+
+#[derive(Debug, Clone)]
+pub struct ProjectWorktree {
+    pub space: String,
+    pub project: String,
+    pub worktree: Worktree,
+}
+#[derive(Debug, Clone)]
+pub struct WorkspaceView {
+    pub registry: WorkspaceSnapshot,
+    pub worktrees: Vec<ProjectWorktree>,
+}

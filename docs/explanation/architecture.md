@@ -22,7 +22,7 @@ flowchart BT
 
 `src/cli/` parses arguments and formats results. It calls `Workspace` use cases
 and does not construct adapters, load JSON, or coordinate persistence. The
-read-only TUI in `src/tui/` renders an owned `WorkspaceSnapshot`; it cannot mutate
+read-only TUI in `src/tui/` renders an owned `WorkspaceView` (registry plus observed worktrees); it cannot mutate
 storage through that snapshot.
 
 `src/main.rs` and `src/composition.rs` form the composition root. They resolve

@@ -12,30 +12,44 @@ use std::io;
 
 use app::App;
 
-pub fn run(snapshot: spacer_core::WorkspaceSnapshot) -> Result<()> {
-    enable_raw_mode()?;
-    let mut stdout = io::stdout();
-    execute!(stdout, EnterAlternateScreen, EnableMouseCapture)?;
-
-    let backend = CrosstermBackend::new(stdout);
-    let mut terminal = Terminal::new(backend)?;
-
-    let result = run_app(&mut terminal, snapshot);
-
-    disable_raw_mode()?;
-    execute!(
-        terminal.backend_mut(),
-        LeaveAlternateScreen,
-        DisableMouseCapture
-    )?;
-    terminal.show_cursor()?;
-
+pub fn run(snapshot: spacer_core::WorkspaceView) -> Result<()> {
+    let previous = std::sync::Arc::new(std::panic::take_hook());
+    let hook = previous.clone();
+    std::panic::set_hook(Box::new(move |info| {
+        restore_terminal();
+        hook(info);
+    }));
+    let result = (|| {
+        let _guard = TerminalGuard;
+        enable_raw_mode()?;
+        let mut stdout = io::stdout();
+        execute!(stdout, EnterAlternateScreen, EnableMouseCapture)?;
+        let mut terminal = Terminal::new(CrosstermBackend::new(stdout))?;
+        run_app(&mut terminal, snapshot)
+    })();
+    std::panic::set_hook(Box::new(move |info| previous(info)));
     result
+}
+
+struct TerminalGuard;
+impl Drop for TerminalGuard {
+    fn drop(&mut self) {
+        restore_terminal();
+    }
+}
+fn restore_terminal() {
+    let _ = disable_raw_mode();
+    let _ = execute!(
+        io::stdout(),
+        LeaveAlternateScreen,
+        DisableMouseCapture,
+        crossterm::cursor::Show
+    );
 }
 
 fn run_app<B: ratatui::backend::Backend>(
     terminal: &mut Terminal<B>,
-    snapshot: spacer_core::WorkspaceSnapshot,
+    snapshot: spacer_core::WorkspaceView,
 ) -> Result<()> {
     let mut app = App::new(snapshot);
 

@@ -24,6 +24,8 @@ pub enum Commands {
     Path(commands::path::PathArgs),
     /// Resolve space/project/change navigation
     Go(commands::go::GoArgs),
-    /// Print shell integration code
+    /// Generate shell completions
+    Completions(commands::completions::CompletionsArgs),
+    /// Enter a managed shell or print shell integration
     Shell(commands::shell::ShellArgs),
 }
