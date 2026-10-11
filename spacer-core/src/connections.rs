@@ -207,7 +207,7 @@ impl Connections {
     }
     pub fn begin_login(&mut self, label: &str, client_id: &str) -> Result<LoginChallenge> {
         self.check_label(label)?;
-        text(client_id, "GitHub App client ID")?;
+        text(client_id, "GitHub OAuth App client ID")?;
         let id = self.catalog.new_id();
         let challenge = self.hosting.begin_login(&id, client_id)?;
         self.pending.insert(id, label.into());

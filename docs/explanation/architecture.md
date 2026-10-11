@@ -93,7 +93,7 @@ registrations, allowing both concepts to be reused across roots. The core stores
 only credential references, never provider tokens.
 
 `JsonCatalog` implements atomic, optimistic user metadata persistence. `Github`
-owns OAuth device polling, API calls, account verification, token refresh, and
+owns OAuth App device polling, user-scoped repository discovery, account verification, token refresh, and
 native credential access. `NativeSecrets` supplies platform credential storage.
 Existing GitHub CLI connectors retrieve a specific account without changing the
 active account. The Git adapter supplies repository-local authorship operations;

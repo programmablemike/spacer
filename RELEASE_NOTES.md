@@ -8,8 +8,9 @@ from a CLI, with shell navigation and a read-only terminal browser.
 GitHub connectors and commit identities add reviewed repository setup to the CLI
 and desktop. Connectors select remote access independently of commit name/email.
 Managed credentials use the platform credential store; existing GitHub CLI accounts
-can be linked explicitly. The registered GitHub App requires device flow and
-repository access to be enabled for live authorization. See
+can be linked explicitly. Managed login uses an OAuth App with device flow;
+organization OAuth approval and SSO restrictions still apply, without requiring
+repository installation. The public OAuth App client ID is bundled. See
 [GitHub setup](docs/how-to/github-setup.md).
 
 Using identity bindings or setup defaults upgrades the workspace registry to schema

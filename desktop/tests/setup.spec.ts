@@ -27,6 +27,7 @@ async function fixture(page: Page) {
     const state = window as any;
     state.__calls = [];
     state.__failSetup = false;
+    state.__emptyRepos = false;
     state.__TAURI_INTERNALS__ = {
       invoke: async (command: string, args: any) => {
         state.__calls.push({ command, args });
@@ -42,10 +43,12 @@ async function fixture(page: Page) {
           if (r.kind === "repositories")
             return {
               kind: "repositories",
-              value: [
-                { id: "1", fullName: "example/one", private: true },
-                { id: "2", fullName: "example/two", private: false },
-              ],
+              value: state.__emptyRepos
+                ? []
+                : [
+                    { id: "1", fullName: "example/one", private: true },
+                    { id: "2", fullName: "example/two", private: false },
+                  ],
             };
           if (r.kind === "beginLogin")
             return {
@@ -166,6 +169,12 @@ test("device authorization opens a fixed browser destination and can be cancelle
   page,
 }) => {
   await fixture(page);
+  await expect(
+    page.getByText(/repo scope permits read and write access/),
+  ).toBeVisible();
+  await expect(
+    page.getByText(/No repository installation is needed/),
+  ).toBeVisible();
   await page
     .getByRole("button", { name: "Sign in with GitHub", exact: true })
     .click();
@@ -208,4 +217,22 @@ test("local project names can be changed before review", async ({ page }) => {
   expect(plan.args.repositories).toEqual([
     { id: "1", project: "custom-project" },
   ]);
+});
+
+test("empty repository list explains OAuth organization approval without an installation request", async ({
+  page,
+}) => {
+  await fixture(page);
+  await page.evaluate(() => {
+    (window as any).__emptyRepos = true;
+  });
+  await page
+    .getByRole("button", { name: "Use connector", exact: true })
+    .click();
+  await expect(
+    page.getByText(
+      "No repositories are visible. Check repository permissions, OAuth App organization approval, and SSO.",
+    ),
+  ).toBeVisible();
+  await expect(page.getByText(/GitHub App installation/)).toHaveCount(0);
 });

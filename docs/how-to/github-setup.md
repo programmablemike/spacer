@@ -8,11 +8,20 @@ independently; connecting GitHub does not configure commit authorship.
 
 ## Connect an account
 
-Spacer supports GitHub.com. Its registered GitHub App must have **Device flow**
-enabled and be installed on the accounts/repositories you want to access. Grant
-repository metadata and Contents read access for discovery and cloning. An
-organization may require administrator approval or SSO before repositories appear.
-See [GitHub App device authorization](https://docs.github.com/en/apps/creating-github-apps/authenticating-with-a-github-app/generating-a-user-access-token-for-a-github-app#using-the-device-flow-to-generate-a-user-access-token).
+Spacer supports GitHub.com through a registered **OAuth App** with **Device flow**
+enabled. Users authorize their own account; Spacer does not require installation
+on an organization's repositories. Organization OAuth App restrictions can still
+require an owner to approve Spacer, and SSO may require a fresh active session.
+See [OAuth App device authorization](https://docs.github.com/en/apps/oauth-apps/building-oauth-apps/authorizing-oauth-apps#device-flow)
+and [organization access restrictions](https://docs.github.com/en/organizations/managing-oauth-access-to-your-organizations-data/about-oauth-app-access-restrictions).
+
+Authorization requests `repo` to discover and clone private repositories, plus
+`offline_access` for expiring tokens and refresh. GitHub's `repo` scope includes
+read and write access to public/private repositories within the user's existing
+permissions; it is not a read-only permission. Spacer currently uses it for
+repository discovery and cloning. No organization administration, email, signing,
+or workflow scope is requested. Review the grant in GitHub before authorizing.
+See [OAuth scopes](https://docs.github.com/en/apps/oauth-apps/building-oauth-apps/scopes-for-oauth-apps).
 
 In the desktop, open or create a workspace, then choose **Set up from GitHub**.
 Choose **Sign in with GitHub**, open the system browser, and enter the displayed
@@ -29,10 +38,20 @@ spacer connector repositories personal
 ```
 
 Use `--no-browser` when you want to open the displayed verification URL yourself.
-The public GitHub App client ID is bundled with Spacer. To use another registered
-App, set `SPACER_GITHUB_CLIENT_ID` or pass `--client-id` to `connector login`.
-The numeric App ID is not the client ID. An App client secret is not required
-for this device flow and must not be supplied.
+Spacer bundles its OAuth App's public client ID. To use another registered OAuth
+App, set `SPACER_GITHUB_CLIENT_ID`, or pass `--client-id` to `connector login`.
+Both CLI and desktop use the environment override. For example:
+
+```sh
+export SPACER_GITHUB_CLIENT_ID=YOUR_OAUTH_APP_CLIENT_ID
+spacer connector login personal
+spacer-desktop
+```
+
+Register an OAuth App under GitHub **Settings → Developer settings → OAuth Apps**,
+and enable **Device flow**. GitHub App client IDs and numeric App IDs cannot be
+used for this workflow. No client secret is needed for device authorization or
+refreshing tokens issued through device flow; never bundle a secret in Spacer.
 
 Alternatively, choose **Find existing GitHub CLI accounts** and select one, or:
 
@@ -131,7 +150,7 @@ spacer identity remove personal
 ```
 
 Disconnecting deletes Spacer-owned keychain entries, but leaves GitHub CLI
-credentials untouched. It does not revoke the GitHub App's server-side grant;
+credentials untouched. It does not revoke the OAuth App's server-side grant;
 manage that in GitHub settings. Removing a connection or identity preserves project
 files and existing Git authorship. Local operations remain usable offline or with
 missing credentials. Reconnect explicitly before further remote operations.

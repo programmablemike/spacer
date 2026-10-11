@@ -99,3 +99,22 @@ fn credential_helper_refuses_wrong_host_without_accessing_a_store() {
     assert!(out.status.success());
     assert!(out.stdout.is_empty());
 }
+
+#[test]
+fn connector_login_rejects_a_github_app_registration_before_authorization() {
+    let directory = tempfile::tempdir().unwrap();
+    let output = cli(
+        directory.path(),
+        &[
+            "connector",
+            "login",
+            "Personal",
+            "--client-id",
+            "Iv23fixture",
+            "--no-browser",
+        ],
+    );
+    assert!(!output.status.success());
+    assert!(String::from_utf8_lossy(&output.stderr).contains("OAuth App client ID"));
+    assert!(!directory.path().join("user/accounts.json").exists());
+}

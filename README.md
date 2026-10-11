@@ -34,7 +34,9 @@ npm run tauri -- dev
 Choose **Set up from GitHub** in the desktop to connect an account, select
 repositories, choose commit authorship, and review destinations before cloning.
 The CLI provides the same services through `spacer connector`, `spacer identity`,
-and `spacer setup`. Managed credentials use the system credential manager.
+and `spacer setup`. OAuth App login works through the user's account without
+repository installation; organizations may still require OAuth approval. Managed
+credentials use the system credential manager.
 
 See [GitHub setup](docs/how-to/github-setup.md) for authorization prerequisites,
 existing credentials, scripting, and recovery.

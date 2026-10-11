@@ -11,4 +11,4 @@ mod catalog;
 mod connection_dto;
 mod github;
 pub use catalog::{catalog_directory, JsonCatalog};
-pub use github::{credential_helper, Github, NativeSecrets, GITHUB_CLIENT_ID};
+pub use github::{credential_helper, github_client_id, Github, NativeSecrets};

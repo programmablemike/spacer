@@ -15,7 +15,15 @@ Identities contain a stable ID, unique identity label, name, and email. Connecto
 contain a stable ID, unique connector label, host, stable remote account ID, login,
 and credential source (`keychain` or `github-cli`). Identity and connector labels
 are separate namespaces. CLI selections accept either a stable ID or its label.
-Only `github.com` is currently supported.
+Only `github.com` is currently supported. Managed login uses an OAuth App device
+flow with `repo offline_access`. Repository discovery paginates the authenticated
+user's `/user/repos` endpoint and does not require repository installation.
+Organization approval and SSO restrictions still apply. The `repo` grant includes
+write access within the user's permissions, even though setup only reads/clones.
+
+The public OAuth App client ID is bundled. `SPACER_GITHUB_CLIENT_ID` overrides it
+for CLI and desktop; `connector login --client-id` overrides it for that invocation.
+An empty override or a GitHub App client ID fails before requesting authorization.
 
 No token, password, device secret, or refresh token is stored in the catalog or
 workspace registry. Managed connector credentials are keyed by connector UUID

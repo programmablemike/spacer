@@ -169,8 +169,7 @@ impl SetupSession {
                 Reply::Connected(Some(service.link_existing(&label, &login)?.into()))
             }
             Request::BeginLogin { label } => {
-                let client = std::env::var("SPACER_GITHUB_CLIENT_ID")
-                    .unwrap_or_else(|_| spacer_data::GITHUB_CLIENT_ID.into());
+                let client = spacer_data::github_client_id(None)?;
                 let challenge = service.begin_login(&label, &client)?;
                 Reply::Login(ChallengeView {
                     id: challenge.id,

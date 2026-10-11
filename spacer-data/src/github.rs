@@ -14,7 +14,28 @@ use std::{
 };
 use zeroize::{Zeroize, Zeroizing};
 
-pub const GITHUB_CLIENT_ID: &str = "Iv23liSsENi3rWbFMVi1";
+/// Public OAuth App registration; deployments can override this through the environment.
+const GITHUB_CLIENT_ID: &str = "Ov23liV39bucQcfRgIOw";
+pub const GITHUB_OAUTH_SCOPES: &str = "repo offline_access";
+
+/// Resolve the public registration from an explicit value, environment, or bundled default.
+pub fn github_client_id(explicit: Option<&str>) -> Result<String> {
+    let id = explicit
+        .map(str::to_owned)
+        .or_else(|| std::env::var("SPACER_GITHUB_CLIENT_ID").ok())
+        .unwrap_or_else(|| GITHUB_CLIENT_ID.into());
+    validate_client_id(&id)?;
+    Ok(id)
+}
+fn validate_client_id(id: &str) -> Result<()> {
+    if id.trim().is_empty() {
+        return Err(Error::Authentication("GitHub OAuth App client ID is not configured; set SPACER_GITHUB_CLIENT_ID or use connector login --client-id".into()));
+    }
+    if id.starts_with("Iv") {
+        return Err(Error::Authentication("this client ID belongs to a GitHub App; configure an OAuth App client ID with Device flow enabled instead".into()));
+    }
+    Ok(())
+}
 /// Native storage contract; test stores are injected, never selected by environment.
 pub trait Secrets: Send + Sync {
     fn get(&self, id: &str) -> Result<Zeroizing<String>>;
@@ -238,13 +259,14 @@ impl Hosting for Github {
         Ok(account)
     }
     fn begin_login(&self, id: &str, client_id: &str) -> Result<LoginChallenge> {
+        validate_client_id(client_id)?;
         let mut value = response(
             self.client
                 .post(format!("{}/login/device/code", self.oauth_base))
                 .header("Accept", "application/json")
-                .form(&[("client_id", client_id), ("scope", "offline_access")]),
+                .form(&[("client_id", client_id), ("scope", GITHUB_OAUTH_SCOPES)]),
         )?;
-        let device_code = Zeroizing::new(value.get("device_code").and_then(Value::as_str).ok_or_else(|| Error::Authentication("device authorization is unavailable; enable device flow for this GitHub App".into()))?.to_string());
+        let device_code = Zeroizing::new(value.get("device_code").and_then(Value::as_str).ok_or_else(|| Error::Authentication("device authorization is unavailable; enable device flow for this OAuth App".into()))?.to_string());
         let interval = value
             .get("interval")
             .and_then(Value::as_u64)
@@ -332,59 +354,22 @@ impl Hosting for Github {
     fn repositories(&self, connector: &Connector) -> Result<Vec<RemoteRepository>> {
         let tokens = self.tokens(connector)?;
         let mut repositories = Vec::new();
-        // GitHub App tokens expose repositories through installations, not /user/repos.
-        if tokens.access_token.starts_with("ghu_") {
-            let mut page = 1;
-            loop {
-                let value = self.api(
-                    &format!("/user/installations?per_page=100&page={page}"),
-                    &tokens.access_token,
-                )?;
-                let items = value
-                    .get("installations")
-                    .and_then(Value::as_array)
-                    .ok_or_else(|| Error::Remote("invalid installation response".into()))?;
-                for installation in items {
-                    let id = numeric_id(installation)?;
-                    let mut repo_page = 1;
-                    loop {
-                        let v = self.api(&format!("/user/installations/{id}/repositories?per_page=100&page={repo_page}"), &tokens.access_token)?;
-                        let rows = v
-                            .get("repositories")
-                            .and_then(Value::as_array)
-                            .ok_or_else(|| Error::Remote("invalid repository response".into()))?;
-                        for row in rows {
-                            repositories.push(parse_repository(row)?);
-                        }
-                        if rows.len() < 100 {
-                            break;
-                        }
-                        repo_page += 1;
-                    }
-                }
-                if items.len() < 100 {
-                    break;
-                }
-                page += 1;
+        let mut page = 1;
+        loop {
+            let value = self.api(
+                &format!("/user/repos?per_page=100&page={page}&sort=full_name"),
+                &tokens.access_token,
+            )?;
+            let rows = value
+                .as_array()
+                .ok_or_else(|| Error::Remote("invalid repository response".into()))?;
+            for row in rows {
+                repositories.push(parse_repository(row)?);
             }
-        } else {
-            let mut page = 1;
-            loop {
-                let value = self.api(
-                    &format!("/user/repos?per_page=100&page={page}&sort=full_name"),
-                    &tokens.access_token,
-                )?;
-                let rows = value
-                    .as_array()
-                    .ok_or_else(|| Error::Remote("invalid repository response".into()))?;
-                for row in rows {
-                    repositories.push(parse_repository(row)?);
-                }
-                if rows.len() < 100 {
-                    break;
-                }
-                page += 1;
+            if rows.len() < 100 {
+                break;
             }
+            page += 1;
         }
         repositories.sort_by(|a, b| a.full_name.cmp(&b.full_name));
         repositories.dedup_by(|a, b| a.id == b.id);
@@ -496,14 +481,14 @@ fn response(request: RequestBuilder) -> Result<Value> {
         if status == 400 {
             let value = response.json::<Value>().unwrap_or(Value::Null);
             return Err(match value.get("error").and_then(Value::as_str) {
-                Some("device_flow_disabled") => Error::Authentication("device flow is disabled for this GitHub App; its owner must enable Device flow in the app settings before signing in".into()),
-                Some("incorrect_client_credentials") => Error::Authentication("GitHub App client ID is invalid; check SPACER_GITHUB_CLIENT_ID".into()),
+                Some("device_flow_disabled") => Error::Authentication("device flow is disabled for this OAuth App; its owner must enable Device flow in the app settings before signing in".into()),
+                Some("incorrect_client_credentials") => Error::Authentication("GitHub OAuth App client ID is invalid; check SPACER_GITHUB_CLIENT_ID".into()),
                 _ => Error::Authentication("GitHub rejected authorization; reconnect or check the App configuration".into()),
             });
         }
         return Err(match status {
             401 => Error::Authentication("GitHub credentials are invalid or expired; reconnect".into()),
-            403 => Error::Remote("GitHub denied access; check App installation, repository permissions, organization approval/SSO, or rate limits".into()),
+            403 => Error::Remote("GitHub denied access; check OAuth App organization approval, repository permissions, SSO, or rate limits".into()),
             404 => Error::Remote("GitHub repository is unavailable to this connector".into()),
             429 => Error::Remote("GitHub rate limit reached; retry later".into()),
             _ => Error::Remote(format!("GitHub request failed (HTTP {}); retry later", status)),
@@ -515,6 +500,13 @@ fn response(request: RequestBuilder) -> Result<Value> {
 }
 fn parse_tokens(value: &mut Value, client_id: &str) -> Result<Tokens> {
     let result = (|| {
+        if !value
+            .get("scope")
+            .and_then(Value::as_str)
+            .is_some_and(|scopes| scopes.split([',', ' ']).any(|s| s == "repo"))
+        {
+            return Err(Error::Authentication("GitHub did not grant the required repo scope; reconnect with an OAuth App and approve repository access".into()));
+        }
         Ok(Tokens {
             access_token: string(value, "access_token")?.into(),
             refresh_token: value
@@ -751,7 +743,7 @@ mod tests {
             (200, serde_json::json!({"error":"slow_down"})),
             (
                 200,
-                serde_json::json!({"access_token":"test-access","refresh_token":"test-refresh","expires_in":28800}),
+                serde_json::json!({"access_token":"test-access","scope":"repo","refresh_token":"test-refresh","expires_in":28800}),
             ),
             (200, serde_json::json!({"id":42,"login":"example"})),
         ]);
@@ -786,6 +778,10 @@ mod tests {
         assert!(github.pending.lock().unwrap().is_empty());
         let requests = server.join().unwrap();
         assert!(requests[0].contains("client_id=public-client"));
+        assert!(requests[0].contains("scope=repo+offline_access"));
+        assert!(!requests
+            .iter()
+            .any(|request| request.contains("client_secret")));
         assert!(requests[2].contains("device_code=test-device-secret"));
     }
     #[test]
@@ -817,7 +813,7 @@ mod tests {
         let (address, server) = server(vec![
             (
                 200,
-                serde_json::json!({"access_token":"new-access","refresh_token":"new-refresh","expires_in":28800}),
+                serde_json::json!({"access_token":"new-access","scope":"repo","refresh_token":"new-refresh","expires_in":28800}),
             ),
             (200, serde_json::json!({"id":99,"login":"other"})),
         ]);
@@ -872,7 +868,7 @@ mod tests {
         let (address, server) = server(vec![
             (
                 200,
-                serde_json::json!({"access_token":"test-private-access","refresh_token":"test-private-refresh","expires_in":28800}),
+                serde_json::json!({"access_token":"test-private-access","scope":"repo","refresh_token":"test-private-refresh","expires_in":28800}),
             ),
             (200, serde_json::json!({"id":42,"login":"example"})),
         ]);
@@ -905,21 +901,13 @@ mod tests {
         assert!(connections.poll_login(&id).is_err());
     }
     #[test]
-    fn app_repository_discovery_uses_installations_and_deduplicates_results() {
+    fn oauth_repository_discovery_paginates_without_installations() {
+        let repository = |id: u64| serde_json::json!({"id":id,"full_name":format!("organization/repo{id}"),"clone_url":format!("https://github.com/organization/repo{id}.git"),"private":true});
+        let first_page: Vec<_> = (1..=100).map(repository).collect();
         let (address, server) = server(vec![
             (200, serde_json::json!({"id":42,"login":"example"})),
-            (
-                200,
-                serde_json::json!({"installations":[{"id":7},{"id":8}]}),
-            ),
-            (
-                200,
-                serde_json::json!({"repositories":[{"id":11,"full_name":"example/one","clone_url":"https://github.com/example/one.git","private":true}]}),
-            ),
-            (
-                200,
-                serde_json::json!({"repositories":[{"id":11,"full_name":"example/one","clone_url":"https://github.com/example/one.git","private":true}]}),
-            ),
+            (200, serde_json::json!(first_page)),
+            (200, serde_json::json!([repository(100), repository(101)])),
         ]);
         let directory = tempfile::tempdir().unwrap();
         let store = Arc::new(MemorySecrets::default());
@@ -929,7 +917,7 @@ mod tests {
             .store(
                 &id,
                 &Tokens {
-                    access_token: "ghu_test".into(),
+                    access_token: "gho_test".into(),
                     refresh_token: None,
                     expires_at: None,
                     client_id: None,
@@ -945,12 +933,44 @@ mod tests {
             source: CredentialSource::Keychain,
         };
         let repos = github.repositories(&connector).unwrap();
-        assert_eq!(repos.len(), 1);
-        assert_eq!(repos[0].id, "11");
+        assert_eq!(repos.len(), 101);
+        assert!(repos
+            .iter()
+            .any(|r| r.full_name == "organization/repo101" && r.private));
         let requests = server.join().unwrap();
-        assert!(requests[1].starts_with("GET /user/installations?"));
-        assert!(requests[2].starts_with("GET /user/installations/7/repositories?"));
-        assert!(requests[3].starts_with("GET /user/installations/8/repositories?"));
+        assert!(requests[1].starts_with("GET /user/repos?per_page=100&page=1&"));
+        assert!(requests[2].starts_with("GET /user/repos?per_page=100&page=2&"));
+        assert!(!requests.iter().any(|r| r.contains("installations")));
+    }
+    #[test]
+    fn oauth_tokens_require_repo_scope_and_can_be_nonexpiring() {
+        let mut value = serde_json::json!({"access_token":"test-token","scope":"repo,read:org","token_type":"bearer"});
+        let tokens = parse_tokens(&mut value, "oauth-client").unwrap();
+        assert!(tokens.refresh_token.is_none());
+        assert!(tokens.expires_at.is_none());
+        assert_eq!(tokens.access_token, "test-token");
+        assert_eq!(value["access_token"], "");
+        let mut restricted = serde_json::json!({"access_token":"test-token","scope":"read:user"});
+        assert!(parse_tokens(&mut restricted, "oauth-client").is_err());
+        assert_eq!(restricted["access_token"], "");
+    }
+    #[test]
+    fn github_app_client_ids_are_rejected_before_network_access() {
+        let directory = tempfile::tempdir().unwrap();
+        let github = adapter(
+            "http://127.0.0.1:1".into(),
+            Arc::new(MemorySecrets::default()),
+            directory.path(),
+        );
+        assert!(github
+            .begin_login("fixture-id", "Iv23fixture")
+            .unwrap_err()
+            .to_string()
+            .contains("OAuth App"));
+        assert!(validate_client_id("")
+            .unwrap_err()
+            .to_string()
+            .contains("not configured"));
     }
     #[test]
     fn errors_do_not_echo_remote_secrets_and_clone_urls_are_constrained() {

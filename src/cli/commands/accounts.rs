@@ -152,10 +152,8 @@ fn login(
     client_id: Option<&str>,
     no_browser: bool,
 ) -> Result<()> {
-    let client_id = client_id
-        .map(str::to_string)
-        .or_else(|| std::env::var("SPACER_GITHUB_CLIENT_ID").ok())
-        .unwrap_or_else(|| spacer_data::GITHUB_CLIENT_ID.into());
+    let client_id = spacer_data::github_client_id(client_id)?;
+    println!("GitHub OAuth authorization requests read and write repository access (repo), including private repositories, within your existing permissions. Organizations may require OAuth approval.");
     let challenge = service.begin_login(label, &client_id)?;
     println!(
         "Open {} and enter {}. Authorize the account you intend to connect.",

@@ -77,7 +77,7 @@ export async function mountSetup(
         page === "connections"
           ? `<p>Choose the account used to discover and clone repositories. Commit authorship is selected separately.</p>
         <div class="setup-cards">${catalog.connectors.map((c) => `<article class="primary-checkout"><div><h2>${esc(c.label)}</h2><p>GitHub · ${esc(c.login)} · ${c.source === "keychain" ? "System credential manager" : "GitHub CLI"}</p></div><div>${button("Use connector", `connector:${c.id}`, "primary")}${button("Disconnect", `disconnect:${c.id}`, "text danger")}</div></article>`).join("")}</div>
-        <section class="setup-form"><h2>Add a connector</h2><label>Connection label<input data-field="label" value="${esc(label)}" maxlength="256"/></label>
+        <section class="setup-form"><h2>Add a connector</h2><p>GitHub OAuth sign-in requests repository access, including private repositories. The repo scope permits read and write access within your GitHub permissions. No repository installation is needed; organizations may require approval.</p><label>Connection label<input data-field="label" value="${esc(label)}" maxlength="256"/></label>
         ${challenge ? `<p>Enter <strong class="device-code">${esc(challenge.userCode)}</strong> at <a href="https://github.com/login/device" data-setup="browser">github.com/login/device</a>. Choose the account you intend to connect.</p><p role="status">Waiting for authorization…</p>${button("Open browser", "browser")}${button("Cancel sign-in", "cancel-login")}` : `${button("Sign in with GitHub", "login", "primary")}${button("Find existing GitHub CLI accounts", "existing")}`}
         ${existing.length ? `<label>Existing account<select aria-label="Existing account" data-field="existing">${existing.map((a) => `<option value="${esc(a)}" ${a === existingLogin ? "selected" : ""}>${esc(a)}</option>`).join("")}</select></label>${button("Use existing credentials", "link")}` : ""}</section>`
           : ""
@@ -94,7 +94,7 @@ export async function mountSetup(
                     `<div><label class="repository-choice"><input type="checkbox" data-repository="${r.id}" ${selected.has(r.id) ? "checked" : ""}/><span>${esc(r.fullName)}</span><span class="badge">${r.private ? "PRIVATE" : "PUBLIC"}</span></label>${selected.has(r.id) ? `<label>Local project name<input aria-label="Local name for ${esc(r.fullName)}" data-project-name="${r.id}" value="${esc(projectNames.get(r.id) ?? r.fullName.split("/").at(-1)!)}"/></label>` : ""}</div>`,
                 )
                 .join("") ||
-              "<p>No repositories are visible. Check the GitHub App installation and repository access.</p>"
+              "<p>No repositories are visible. Check repository permissions, OAuth App organization approval, and SSO.</p>"
             }</div>${button("Back", "back")}${button("Choose identity", "identity", "primary", selected.size > 0 && !!space)}</section>`
           : ""
       }
