@@ -24,6 +24,7 @@ tabled = "0.17"
 clap_complete = "4"
 libc = "0.2"
 tempfile = "3"
+open = "5"
 
 
 [profile.release]

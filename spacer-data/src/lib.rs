@@ -6,3 +6,9 @@ pub mod registry;
 pub use filesystem::LocalFilesystem;
 pub use git::GitCli;
 pub use registry::JsonRegistry;
+
+mod catalog;
+mod connection_dto;
+mod github;
+pub use catalog::{catalog_directory, JsonCatalog};
+pub use github::{credential_helper, github_client_id, Github, NativeSecrets};

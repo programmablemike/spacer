@@ -29,6 +29,8 @@ impl Change {
 /// Owned domain data usable by any presentation without exposing a storage format.
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct WorkspaceSnapshot {
+    pub bindings: Vec<crate::connections::ProjectBinding>,
+    pub setup_defaults: Vec<crate::connections::SetupDefault>,
     pub spaces: Vec<Space>,
     pub projects: Vec<Project>,
     pub changes: Vec<Change>,

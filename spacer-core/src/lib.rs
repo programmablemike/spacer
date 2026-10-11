@@ -1,4 +1,5 @@
 //! Framework-independent domain model, application services, and outbound ports.
+pub mod connections;
 pub mod error;
 pub mod model;
 pub mod ports;

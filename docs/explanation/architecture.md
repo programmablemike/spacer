@@ -84,6 +84,41 @@ and `finish_change` manage tracking, while `start_worktree` and `close_worktree`
 operate on real checkouts. CLI commands use the Git lifecycle. Legacy tracking is exposed explicitly with
 `--tracked`, preserving old metadata without presenting it as a checkout.
 
+## Connectors, identities, and provisioning
+
+`spacer-core::connections` defines a separate application service and its catalog
+and hosting ports. A connector selects authenticated remote access; an identity
+selects Git commit name/email. The user catalog is independent of workspace
+registrations, allowing both concepts to be reused across roots. The core stores
+only credential references, never provider tokens.
+
+`JsonCatalog` implements atomic, optimistic user metadata persistence. `Github`
+owns OAuth App device polling, user-scoped repository discovery, account verification, token refresh, and
+native credential access. `NativeSecrets` supplies platform credential storage.
+Existing GitHub CLI connectors retrieve a specific account without changing the
+active account. The Git adapter supplies repository-local authorship operations;
+name and email are staged and replaced atomically under Git's configuration lock.
+
+Provisioning first produces an `ImportPlan` containing the selected account,
+identity values, verified remote repository, and canonical destination. Execution
+revalidates these selections and the destination before cloning. A command-scoped
+native helper provides credentials to Git over its credential protocol, restricted
+to the exact HTTPS repository. The clone URL and saved Git configuration contain
+no credentials. Registration and its binding are persisted together after cloning
+and explicitly selected authorship configuration succeed.
+
+Remote effects and local metadata are not one transaction. A failed registration
+preserves the checkout and reports recovery instructions. Removing catalog records
+does not remove files or rewrite Git configuration. The core can open a workspace
+with missing connector or identity references so offline operations remain usable.
+
+The desktop keeps connection requests in a separate native session from workspace
+requests. OAuth polling is driven by cancellable UI requests rather than holding a
+workspace lock while the browser is open. Setup plans are held natively behind
+opaque IDs; the frontend cannot replace their paths, credentials, or account
+bindings. Every execution checks its expected root and reopens the registry.
+Batch setup runs one project at a time and keeps each outcome visible.
+
 ## Data adapters
 
 `spacer-data` depends on `spacer-core`, never the reverse. Its three adapters

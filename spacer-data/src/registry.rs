@@ -41,7 +41,7 @@ impl Registry for JsonRegistry {
         let state = if let Some(bytes) = &data {
             let config: StoredConfig =
                 serde_json::from_slice(bytes).map_err(|e| persistence(&path, e))?;
-            if config.schema_version > 1 {
+            if config.schema_version > 2 {
                 return Err(persistence(
                     &path,
                     "unsupported schema version; upgrade Spacer without modifying this file",
@@ -134,6 +134,10 @@ fn persistence(path: &Path, error: impl std::fmt::Display) -> Error {
 #[derive(Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 struct StoredConfig {
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    bindings: Vec<crate::connection_dto::StoredBinding>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    setup_defaults: Vec<crate::connection_dto::StoredDefault>,
     #[serde(default)]
     schema_version: u32,
     spaces: Vec<StoredSpace>,
@@ -147,6 +151,8 @@ struct StoredConfig {
 impl From<StoredConfig> for WorkspaceSnapshot {
     fn from(c: StoredConfig) -> Self {
         Self {
+            bindings: c.bindings.into_iter().map(Into::into).collect(),
+            setup_defaults: c.setup_defaults.into_iter().map(Into::into).collect(),
             spaces: c.spaces.into_iter().map(Into::into).collect(),
             projects: c.projects.into_iter().map(Into::into).collect(),
             changes: c.changes.into_iter().map(Into::into).collect(),
@@ -158,7 +164,13 @@ impl From<StoredConfig> for WorkspaceSnapshot {
 impl From<WorkspaceSnapshot> for StoredConfig {
     fn from(c: WorkspaceSnapshot) -> Self {
         Self {
-            schema_version: 1,
+            schema_version: if c.bindings.is_empty() && c.setup_defaults.is_empty() {
+                1
+            } else {
+                2
+            },
+            bindings: c.bindings.into_iter().map(Into::into).collect(),
+            setup_defaults: c.setup_defaults.into_iter().map(Into::into).collect(),
             spaces: c.spaces.into_iter().map(Into::into).collect(),
             projects: c.projects.into_iter().map(Into::into).collect(),
             changes: c.changes.into_iter().map(Into::into).collect(),
@@ -245,7 +257,7 @@ impl From<Change> for StoredChange {
 
 // Explicit unlock also releases a descriptor briefly inherited by a concurrent
 // fork before exec closes it. Closing only the parent descriptor is insufficient.
-struct RegistryLock(std::fs::File);
+pub(crate) struct RegistryLock(pub(crate) std::fs::File);
 impl Drop for RegistryLock {
     fn drop(&mut self) {
         let _ = self.0.unlock();

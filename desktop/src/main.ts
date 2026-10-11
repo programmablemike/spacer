@@ -1,4 +1,5 @@
 import "./style.css";
+import { mountSetup } from "./setup";
 import {
   api,
   errorMessage,
@@ -161,7 +162,7 @@ function overview() {
     0,
   );
   return `<div class="page-heading"><div><div class="eyebrow">${selectedSpace ? "SPACE" : "YOUR WORK, ORGANIZED"}</div><h1>${esc(selectedSpace || "Workspace overview")}</h1><p class="lede">${selectedSpace ? "Repositories together. Changes with room to grow." : "One place to find your projects and pick up where you left off."}</p></div>
-    <div class="heading-actions">${!s.spaces.length ? button("Create space", "new-space", "primary", {}, icon("plus")) : `${button("Register project", "register")}${button("New project", "new-project", "primary", {}, icon("plus"))}`}</div></div>
+    <div class="heading-actions">${button("Set up from GitHub", "setup")}${!s.spaces.length ? button("Create space", "new-space", "primary", {}, icon("plus")) : `${button("Register project", "register")}${button("New project", "new-project", "primary", {}, icon("plus"))}`}</div></div>
     ${selectedSpace ? `<div class="toolbar">${button("Open folder", "open-space", "text", {}, icon("folder"))}${button("Copy path", "copy-space", "text", {}, icon("copy"))}${button(s.activeSpace === selectedSpace ? "Default space" : "Use as default", "use-space", "text")}${button("Unregister space", "unregister-space", "text danger")}</div>` : ""}
     <div class="stats"><div><strong>${selectedSpace ? projects.length : s.spaces.length}</strong><span>${selectedSpace ? "Projects in this space" : "Spaces"}</span></div><div><strong>${selectedSpace ? changes : s.projects.length}</strong><span>${selectedSpace ? "Linked worktrees" : "Projects"}</span></div><div><strong>${selectedSpace ? projects.filter((p) => !!p.error).length : changes}</strong><span>${selectedSpace ? "Projects needing attention" : "Linked worktrees"}</span></div></div>
     <div class="section-heading"><h2>Projects <span class="muted">${projects.length}</span></h2><label class="search"><span class="sr-only">Filter projects</span><input id="filter" placeholder="Find a project…" value="${esc(filter)}"/></label></div><div id="project-list">${projectCards()}</div>`;
@@ -174,7 +175,7 @@ function projectView(p: Project) {
     (c) => c.space === p.space && c.project === p.name,
   );
   return `<div class="page-heading"><div><div class="eyebrow">PROJECT / ${esc(p.space)}</div><h1>${esc(p.name)}</h1><p class="path full-path">${esc(p.path)}</p></div><div class="heading-actions">${button("Start change", "new-change", "primary", {}, icon("plus"))}</div></div>
-    <div class="toolbar">${button("Open folder", "open-project", "text", {}, icon("folder"))}${button("Copy path", "copy-project", "text", {}, icon("copy"))}${button(s.activeSpace === p.space && s.activeProject === p.name ? "Default project" : "Use as default", "use-project", "text")}${button("Unregister project", "unregister-project", "text danger")}</div>
+    <div class="toolbar">${button("Open folder", "open-project", "text", {}, icon("folder"))}${button("Copy path", "copy-project", "text", {}, icon("copy"))}${button(s.activeSpace === p.space && s.activeProject === p.name ? "Default project" : "Use as default", "use-project", "text")}${button("Commit identity", "commit-identity", "text")}${button("Unregister project", "unregister-project", "text danger")}</div>
     ${p.error ? `<div class="message error" role="alert"><strong>Repository needs attention</strong><span>${esc(p.error.message)}</span><span>Its registration is preserved. Repair the repository, refresh, or unregister it.</span></div>` : ""}
     <section class="primary-checkout"><span class="folder-icon">${icon("folder")}</span><div><h2>Primary checkout</h2><p>${primary?.branch ? esc(primary.branch) : "Create an initial commit with Git before starting a change."}</p></div><span class="badge">${primary?.branch ? "PRIMARY" : "GETTING STARTED"}</span></section>
     <div class="section-heading"><h2>Linked worktrees <span class="muted">${changes.length}</span></h2></div>
@@ -355,7 +356,20 @@ app.addEventListener("click", async (event) => {
   const action = element.dataset.action!;
   const data = element.dataset;
   const p = project();
-  if (action === "dismiss") {
+  if (action === "setup" || action === "commit-identity") {
+    const root = snapshot!.root;
+    await mountSetup(
+      app,
+      root,
+      snapshot!.spaces,
+      () => {
+        void run(async () => {
+          accept(await api.read(root));
+        });
+      },
+      action === "commit-identity" ? p : undefined,
+    );
+  } else if (action === "dismiss") {
     error = "";
     render();
   } else if (action === "cancel") {

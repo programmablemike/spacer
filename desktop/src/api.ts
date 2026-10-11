@@ -74,3 +74,89 @@ export function errorMessage(error: unknown): string {
   if (typeof error === "string") return error;
   return "The operation could not complete. Refresh the workspace and try again.";
 }
+
+export interface CommitIdentity {
+  id: string;
+  label: string;
+  name: string;
+  email: string;
+}
+export interface Connector {
+  id: string;
+  label: string;
+  login: string;
+  accountId: string;
+  source: string;
+}
+export interface Catalog {
+  identities: CommitIdentity[];
+  connectors: Connector[];
+}
+export interface RemoteRepository {
+  id: string;
+  fullName: string;
+  private: boolean;
+}
+export interface LoginChallenge {
+  id: string;
+  userCode: string;
+  verificationUri: string;
+  interval: number;
+}
+export interface SetupPlan {
+  id: string;
+  repository: string;
+  project: string;
+  path: string;
+  connector: Connector;
+  identity: CommitIdentity | null;
+}
+export type ConnectionRequest =
+  | { kind: "catalog" | "existing" }
+  | { kind: "addIdentity"; label: string; name: string; email: string }
+  | { kind: "removeIdentity"; identity: string }
+  | { kind: "link"; label: string; login: string }
+  | { kind: "beginLogin"; label: string }
+  | { kind: "pollLogin" | "cancelLogin"; id: string }
+  | { kind: "disconnect" | "repositories"; connector: string };
+export type ConnectionReply =
+  | { kind: "catalog"; value: Catalog }
+  | { kind: "existing"; value: string[] }
+  | { kind: "login"; value: LoginChallenge }
+  | { kind: "connected"; value: Connector | null }
+  | { kind: "repositories"; value: RemoteRepository[] }
+  | { kind: "done" };
+export const setupApi = {
+  request: (request: ConnectionRequest) =>
+    invoke<ConnectionReply>("connection_request", { request }),
+  authorize: () => invoke<void>("open_github_authorization"),
+  plan: (
+    root: string,
+    space: string,
+    connector: string,
+    identity: string | null,
+    repositories: { id: string; project: string }[],
+  ) =>
+    invoke<SetupPlan[]>("plan_setup", {
+      root,
+      space,
+      connector,
+      identity,
+      repositories,
+    }),
+  execute: (root: string, id: string) =>
+    invoke<void>("execute_setup", { root, id }),
+  identity: (root: string, space: string, project: string) =>
+    invoke<[string | null, string | null]>("read_commit_identity", {
+      root,
+      space,
+      project,
+    }),
+  applyIdentity: (
+    root: string,
+    space: string,
+    project: string,
+    identity: string,
+  ) =>
+    invoke<void>("apply_commit_identity", { root, space, project, identity }),
+};

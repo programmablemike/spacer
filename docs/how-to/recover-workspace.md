@@ -8,8 +8,9 @@ manual repairs. Keep project directories and Git worktrees in place.
 ## Legacy configuration
 
 Unversioned `config.json` with valid absolute paths loads without changing the
-file. Its next successful mutation writes schema version 1 atomically, preserving
-registrations, tracking entries, custom paths, and valid saved context. Unknown
+file. Its next successful mutation writes the supported schema atomically:
+version 1 for local-only state, or version 2 when remote bindings or setup defaults
+are used. It preserves registrations, tracking entries, custom paths, and valid saved context. Unknown
 schemas or fields are rejected rather than discarded.
 
 Relative legacy paths are ambiguous because old commands interpreted them against

@@ -43,3 +43,22 @@ pub fn open_workspace(initialize: bool) -> Result<Workspace> {
         context,
     )?)
 }
+
+pub fn connections() -> Result<spacer_core::connections::Connections> {
+    Ok(spacer_core::connections::Connections::new(
+        spacer_data::JsonCatalog::new(spacer_data::catalog_directory()?),
+        std::sync::Arc::new(spacer_data::Github::new(std::sync::Arc::new(
+            spacer_data::NativeSecrets,
+        ))?),
+    ))
+}
+pub fn open_root(root: PathBuf) -> Result<Workspace> {
+    let registry = JsonRegistry::new(&root);
+    Ok(Workspace::open(
+        root,
+        registry,
+        LocalFilesystem,
+        GitCli,
+        ContextOverrides::default(),
+    )?)
+}

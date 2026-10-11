@@ -23,12 +23,16 @@ Workspace discovery uses SPACER_ROOT or the nearest ancestor workspace.
 - [Recovery](docs/how-to/recover-workspace.md): Legacy compatibility, conflicts, and partial failures.
 - [Release verification](docs/how-to/verify-release.md): Native quality gates and archive smoke tests.
 
+- [GitHub setup](docs/how-to/github-setup.md): Connect accounts, select authorship, review, clone, and recover projects.
+
 ## Reference
 
 - [CLI](docs/reference/cli.md): Commands, effects, and TUI keys.
 - [Configuration](docs/reference/configuration.md): Context, discovery, schema, and persistence.
 - [Rust API](docs/reference/rust-api.md): Ports, use cases, and library migration.
 - [Release notes](RELEASE_NOTES.md): Supported platforms, compatibility changes, and alpha limits.
+
+- [Connectors and identities](docs/reference/connectors-identities.md): User catalog, credential storage, workspace bindings, and commands.
 
 ## Explanation
 

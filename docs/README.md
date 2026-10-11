@@ -12,12 +12,14 @@ you need below.
 | Use the graphical app | [Desktop guide](how-to/desktop.md) |
 | Install Spacer | [Installation](how-to/install.md) |
 | Manage Spacer with Nix | [Nix, Home Manager, and nix-darwin](how-to/nix.md) |
+| Set up projects from GitHub | [GitHub setup](how-to/github-setup.md) |
 | Navigate from your shell | [Set up navigation](how-to/shell-navigation.md) |
 | Register a repository you already have | [Add an existing project](how-to/existing-project.md) |
 | Recover after an error or upgrade | [Workspace recovery](how-to/recover-workspace.md) |
 | Verify a build or release | [Release verification](how-to/verify-release.md) |
 | Look up commands | [CLI reference](reference/cli.md) |
 | Look up state, defaults, and constraints | [Configuration reference](reference/configuration.md) |
+| Look up connectors and commit identities | [Connectors and identities](reference/connectors-identities.md) |
 | Integrate with the Rust libraries | [Rust API and migration](reference/rust-api.md) |
 | Understand the design | [Hexagonal architecture](explanation/architecture.md) |
 

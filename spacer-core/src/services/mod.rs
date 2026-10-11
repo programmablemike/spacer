@@ -236,6 +236,8 @@ impl Workspace {
             next.active_project = None;
         }
         next.spaces.retain(|s| s.name != name);
+        next.setup_defaults
+            .retain(|d| d.space.as_deref() != Some(name));
         self.persist(next)
     }
     pub fn set_active_space(&mut self, name: &str) -> Result<()> {
@@ -349,6 +351,8 @@ impl Workspace {
         }
         next.projects
             .retain(|p| !(p.name == name && p.space == space));
+        next.bindings
+            .retain(|b| !(b.project == name && b.space == space));
         self.persist(next)
     }
     /// Metadata tracking; does not create a checkout.
@@ -410,6 +414,172 @@ impl Workspace {
             .ok_or_else(|| Error::NotFound(format!("linked worktree '{name}' not found; detached checkouts must be addressed with Git directly")))?;
         self.existing_directory(&tree.path)
     }
+
+    pub fn setup_defaults(&self, space: &str) -> Result<crate::connections::SetupDefault> {
+        self.space(space)?;
+        let workspace = self
+            .state
+            .setup_defaults
+            .iter()
+            .find(|d| d.space.is_none())
+            .cloned()
+            .unwrap_or_default();
+        let scoped = self
+            .state
+            .setup_defaults
+            .iter()
+            .find(|d| d.space.as_deref() == Some(space));
+        Ok(crate::connections::SetupDefault {
+            space: Some(space.into()),
+            connector: scoped
+                .and_then(|d| d.connector.clone())
+                .or(workspace.connector),
+            identity: scoped
+                .and_then(|d| d.identity.clone())
+                .or(workspace.identity),
+        })
+    }
+    pub fn set_setup_defaults(&mut self, defaults: crate::connections::SetupDefault) -> Result<()> {
+        if let Some(space) = &defaults.space {
+            self.space(space)?;
+        }
+        let mut next = self.state.clone();
+        next.setup_defaults.retain(|d| d.space != defaults.space);
+        next.setup_defaults.push(defaults);
+        self.persist(next)
+    }
+    pub fn import_destination(&self, name: &str, space: &str) -> Result<PathBuf> {
+        self.space(space)?;
+        self.preview_import_destination(name, space)
+    }
+    pub fn preview_import_destination(&self, name: &str, space: &str) -> Result<PathBuf> {
+        validation::entity_name(name)?;
+        validation::entity_name(space)?;
+        let parent = match self.state.spaces.iter().find(|s| s.name == space) {
+            Some(s) => s.path.clone(),
+            None => self.creation_path(&self.root, space, None)?,
+        };
+        let path = self.creation_path(&parent, name, None)?;
+        for project in &self.state.projects {
+            let existing = self.filesystem.normalize(&project.path)?;
+            if (project.space == space && project.name == name)
+                || existing.starts_with(&path)
+                || path.starts_with(&existing)
+            {
+                return Err(Error::AlreadyExists(
+                    "project or overlapping destination already registered".into(),
+                ));
+            }
+        }
+        if !self.filesystem.is_empty_or_missing(&path)? {
+            return Err(Error::InvalidOperation(
+                "destination is not empty; register an existing checkout instead".into(),
+            ));
+        }
+        Ok(path)
+    }
+    pub fn register_import(&mut self, plan: &crate::connections::ImportPlan) -> Result<()> {
+        validation::entity_name(&plan.project)?;
+        let expected = self.creation_path(&self.space(&plan.space)?.path, &plan.project, None)?;
+        if plan.root != self.root || expected != plan.path {
+            return Err(Error::InvalidOperation(
+                "import plan does not match this workspace and destination".into(),
+            ));
+        }
+        for project in &self.state.projects {
+            let existing = self.filesystem.normalize(&project.path)?;
+            if (project.space == plan.space && project.name == plan.project)
+                || existing.starts_with(&plan.path)
+                || plan.path.starts_with(&existing)
+            {
+                return Err(Error::AlreadyExists(
+                    "import destination is already registered or overlaps another project".into(),
+                ));
+            }
+        }
+        crate::connections::validate_catalog(&crate::connections::CatalogSnapshot {
+            identities: plan.identity.iter().cloned().collect(),
+            connectors: vec![plan.connector.clone()],
+        })?;
+        self.git.validate_repository(&plan.path)?;
+        let mut next = self.state.clone();
+        if let Some(identity) = &plan.identity {
+            self.git
+                .apply_identity(&plan.path, &identity.name, &identity.email)?;
+        }
+        next.projects.push(Project {
+            name: plan.project.clone(),
+            space: plan.space.clone(),
+            path: plan.path.clone(),
+        });
+        next.bindings.push(crate::connections::ProjectBinding {
+            space: plan.space.clone(),
+            project: plan.project.clone(),
+            connector: Some(plan.connector.id.clone()),
+            identity: plan.identity.as_ref().map(|i| i.id.clone()),
+            remote: Some(plan.repository.clone()),
+            applied_name: plan.identity.as_ref().map(|i| i.name.clone()),
+            applied_email: plan.identity.as_ref().map(|i| i.email.clone()),
+        });
+        self.persist(next)
+    }
+    pub fn project_identity(
+        &self,
+        space: &str,
+        project: &str,
+    ) -> Result<(Option<String>, Option<String>)> {
+        self.git
+            .commit_identity(&self.project(project, space)?.path)
+    }
+    pub fn apply_project_identity(
+        &mut self,
+        space: &str,
+        project: &str,
+        identity: &crate::connections::Identity,
+    ) -> Result<()> {
+        crate::connections::validate_catalog(&crate::connections::CatalogSnapshot {
+            identities: vec![identity.clone()],
+            connectors: Vec::new(),
+        })?;
+        let path = &self.project(project, space)?.path;
+        self.git.validate_repository(path)?;
+        let current = self.git.commit_identity(path)?;
+        let mut next = self.state.clone();
+        let binding = if let Some(index) = next
+            .bindings
+            .iter()
+            .position(|b| b.space == space && b.project == project)
+        {
+            &mut next.bindings[index]
+        } else {
+            next.bindings.push(crate::connections::ProjectBinding {
+                space: space.into(),
+                project: project.into(),
+                connector: None,
+                identity: None,
+                remote: None,
+                applied_name: None,
+                applied_email: None,
+            });
+            next.bindings.last_mut().expect("binding just inserted")
+        };
+        if binding.applied_name.is_some()
+            && (current.0 != binding.applied_name || current.1 != binding.applied_email)
+        {
+            return Err(Error::InvalidOperation("Git authorship changed outside Spacer; inspect repository configuration before applying another identity".into()));
+        }
+        self.git
+            .apply_identity(path, &identity.name, &identity.email)?;
+        binding.identity = Some(identity.id.clone());
+        binding.applied_name = Some(identity.name.clone());
+        binding.applied_email = Some(identity.email.clone());
+        self.persist(next).map_err(|e| {
+            Error::Persistence(format!(
+                "{e}; Git authorship was applied; reopen to inspect configuration"
+            ))
+        })
+    }
+
     /// Observe actual Git state for a registered project. Does not create registry entries.
     pub fn worktrees(&self, project: &str, space: &str) -> Result<Vec<Worktree>> {
         let repository = &self.project(project, space)?.path;

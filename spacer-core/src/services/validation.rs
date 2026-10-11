@@ -96,6 +96,26 @@ pub(super) fn validate_state(state: &WorkspaceSnapshot) -> Result<()> {
             )));
         }
     }
+    let mut bindings = HashSet::new();
+    for b in &state.bindings {
+        if !projects.contains(&(b.space.as_str(), b.project.as_str()))
+            || !bindings.insert((&b.space, &b.project))
+        {
+            return Err(invalid(
+                "missing project or duplicate project binding".into(),
+            ));
+        }
+    }
+    let mut defaults = HashSet::new();
+    for d in &state.setup_defaults {
+        if d.space
+            .as_ref()
+            .is_some_and(|s| !spaces.contains(s.as_str()))
+            || !defaults.insert(&d.space)
+        {
+            return Err(invalid("missing space or duplicate setup defaults".into()));
+        }
+    }
     Ok(())
 }
 

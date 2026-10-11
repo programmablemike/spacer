@@ -9,6 +9,8 @@ pub enum Error {
     Persistence(String),
     Filesystem(String),
     Git(String),
+    Authentication(String),
+    Remote(String),
 }
 
 impl fmt::Display for Error {
@@ -19,7 +21,9 @@ impl fmt::Display for Error {
             | Self::InvalidOperation(s)
             | Self::Persistence(s)
             | Self::Filesystem(s)
-            | Self::Git(s) => f.write_str(s),
+            | Self::Git(s)
+            | Self::Authentication(s)
+            | Self::Remote(s) => f.write_str(s),
         }
     }
 }

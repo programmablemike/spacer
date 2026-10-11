@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-apply-commit-identity"
+description = "Enables the apply_commit_identity command without any pre-configured scope."
+commands.allow = ["apply_commit_identity"]
+
+[[permission]]
+identifier = "deny-apply-commit-identity"
+description = "Denies the apply_commit_identity command without any pre-configured scope."
+commands.deny = ["apply_commit_identity"]
