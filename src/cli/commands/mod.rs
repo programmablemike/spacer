@@ -8,3 +8,5 @@ pub mod go;
 pub mod path;
 
 pub mod completions;
+
+pub mod accounts;

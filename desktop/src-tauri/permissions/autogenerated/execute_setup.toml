@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-execute-setup"
+description = "Enables the execute_setup command without any pre-configured scope."
+commands.allow = ["execute_setup"]
+
+[[permission]]
+identifier = "deny-execute-setup"
+description = "Denies the execute_setup command without any pre-configured scope."
+commands.deny = ["execute_setup"]

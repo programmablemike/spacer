@@ -12,6 +12,12 @@ pub struct Cli {
 
 #[derive(Subcommand)]
 pub enum Commands {
+    /// Manage commit names and emails
+    Identity(commands::accounts::IdentityArgs),
+    /// Manage authenticated GitHub connections
+    Connector(commands::accounts::ConnectorArgs),
+    /// Review and provision projects from GitHub
+    Setup(commands::accounts::SetupArgs),
     /// Manage the Spacer workspace
     Workspace(commands::workspace::WorkspaceArgs),
     /// Manage spaces

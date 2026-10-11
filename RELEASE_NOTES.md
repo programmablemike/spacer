@@ -3,6 +3,20 @@
 Spacer organizes local Git repositories into spaces and manages linked worktrees
 from a CLI, with shell navigation and a read-only terminal browser.
 
+## Unreleased
+
+GitHub connectors and commit identities add reviewed repository setup to the CLI
+and desktop. Connectors select remote access independently of commit name/email.
+Managed credentials use the platform credential store; existing GitHub CLI accounts
+can be linked explicitly. The registered GitHub App requires device flow and
+repository access to be enabled for live authorization. See
+[GitHub setup](docs/how-to/github-setup.md).
+
+Using identity bindings or setup defaults upgrades the workspace registry to schema
+2, which older binaries reject. Existing local-only workspaces retain schema 1.
+The Rust `WorkspaceSnapshot` gains `bindings` and `setup_defaults` fields; external
+struct literals should initialize them or use `..Default::default()`.
+
 ## Included workflows
 
 - Create a Git project or register an existing primary repository without moving it.

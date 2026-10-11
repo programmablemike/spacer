@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-read-commit-identity"
+description = "Enables the read_commit_identity command without any pre-configured scope."
+commands.allow = ["read_commit_identity"]
+
+[[permission]]
+identifier = "deny-read-commit-identity"
+description = "Denies the read_commit_identity command without any pre-configured scope."
+commands.deny = ["read_commit_identity"]

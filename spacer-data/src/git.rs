@@ -7,6 +7,101 @@ use std::process::Command;
 #[derive(Default)]
 pub struct GitCli;
 impl Git for GitCli {
+    fn commit_identity(&self, repository: &Path) -> Result<(Option<String>, Option<String>)> {
+        let read = |key: &str| -> Result<Option<String>> {
+            let output = command()
+                .current_dir(repository)
+                .args(["config", "--get", key])
+                .output()
+                .map_err(|_| Error::Git("cannot read Git authorship".into()))?;
+            if output.status.code() == Some(1) {
+                return Ok(None);
+            }
+            if !output.status.success() {
+                return Err(Error::Git("cannot read Git authorship".into()));
+            }
+            Ok(Some(
+                String::from_utf8(output.stdout)
+                    .map_err(|_| Error::Git("Git authorship is not UTF-8".into()))?
+                    .trim_end_matches('\n')
+                    .into(),
+            ))
+        };
+        Ok((read("user.name")?, read("user.email")?))
+    }
+    fn apply_identity(&self, repository: &Path, name: &str, email: &str) -> Result<()> {
+        let extension = command()
+            .current_dir(repository)
+            .args(["config", "--bool", "--get", "extensions.worktreeConfig"])
+            .output()
+            .map_err(|_| Error::Git("cannot inspect worktree configuration".into()))?;
+        if extension.status.success() && extension.stdout == b"true\n" {
+            for tree in self.worktrees(repository)? {
+                for key in ["user.name", "user.email"] {
+                    let out = command()
+                        .current_dir(&tree.path)
+                        .args(["config", "--worktree", "--get", key])
+                        .output()
+                        .map_err(|_| Error::Git("cannot inspect worktree authorship".into()))?;
+                    if out.status.success() {
+                        return Err(Error::InvalidOperation("worktree-specific authorship is configured; reconcile it with Git before applying a project identity".into()));
+                    }
+                    if out.status.code() != Some(1) {
+                        return Err(Error::Git("cannot inspect worktree authorship".into()));
+                    }
+                }
+            }
+        } else if !extension.status.success() && extension.status.code() != Some(1) {
+            return Err(Error::Git("cannot inspect worktree configuration".into()));
+        }
+        // Update both values atomically using Git's conventional config.lock.
+        let common = run(
+            repository,
+            &["rev-parse".as_ref(), "--git-common-dir".as_ref()],
+        )?;
+        let common = path_from_bytes(common.strip_suffix(b"\n").unwrap_or(&common))?;
+        let directory = repository.join(common);
+        let config = directory.join("config");
+        let lock_path = directory.join("config.lock");
+        let lock = std::fs::OpenOptions::new().write(true).create_new(true).open(&lock_path).map_err(|_| Error::Git("Git configuration is locked or unavailable; retry after other Git operations finish".into()))?;
+        struct ConfigLock(Option<std::fs::File>, PathBuf);
+        impl Drop for ConfigLock {
+            fn drop(&mut self) {
+                // Windows requires closing the descriptor before removing the lock.
+                drop(self.0.take());
+                let _ = std::fs::remove_file(&self.1);
+            }
+        }
+        let _guard = ConfigLock(Some(lock), lock_path);
+        let mut copy = tempfile::NamedTempFile::new_in(&directory)
+            .map_err(|_| Error::Git("cannot stage Git configuration".into()))?;
+        use std::io::Write;
+        copy.write_all(
+            &std::fs::read(&config)
+                .map_err(|_| Error::Git("cannot read repository configuration".into()))?,
+        )
+        .map_err(|_| Error::Git("cannot stage Git configuration".into()))?;
+        for (key, value) in [("user.name", name), ("user.email", email)] {
+            run(
+                repository,
+                &[
+                    "config".as_ref(),
+                    "--file".as_ref(),
+                    git_path(copy.path()).as_os_str(),
+                    "--replace-all".as_ref(),
+                    key.as_ref(),
+                    value.as_ref(),
+                ],
+            )?;
+        }
+        copy.as_file()
+            .sync_all()
+            .map_err(|_| Error::Git("cannot flush Git configuration".into()))?;
+        copy.persist(config)
+            .map_err(|_| Error::Git("cannot replace repository configuration".into()))?;
+        Ok(())
+    }
+
     fn validate_repository(&self, repository: &Path) -> Result<()> {
         let bare = run(
             repository,
@@ -114,7 +209,7 @@ impl Git for GitCli {
     }
 }
 // Git for Windows does not accept Rust's canonical verbatim path prefix.
-fn git_path(path: &Path) -> PathBuf {
+pub(crate) fn git_path(path: &Path) -> PathBuf {
     #[cfg(windows)]
     {
         use std::path::{Component, Prefix};
@@ -139,7 +234,7 @@ fn git_path(path: &Path) -> PathBuf {
     }
     path.to_path_buf()
 }
-fn run(cwd: &Path, args: &[&OsStr]) -> Result<Vec<u8>> {
+pub(crate) fn command() -> Command {
     let mut command = Command::new("git");
     // Hook and shell environments must not redirect a registered repository's
     // index, objects, worktree, or command-scoped configuration elsewhere.
@@ -163,7 +258,10 @@ fn run(cwd: &Path, args: &[&OsStr]) -> Result<Vec<u8>> {
     ] {
         command.env_remove(name);
     }
-    let output = command
+    command
+}
+fn run(cwd: &Path, args: &[&OsStr]) -> Result<Vec<u8>> {
+    let output = command()
         .args(args)
         .current_dir(cwd)
         .output()

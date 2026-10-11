@@ -8,7 +8,17 @@ mod tui;
 use cli::{Cli, Commands};
 
 fn main() -> Result<()> {
+    let arguments: Vec<String> = std::env::args().collect();
+    if arguments.get(1).map(String::as_str) == Some("--spacer-credential") {
+        return spacer_data::credential_helper(&arguments[2..]).map_err(Into::into);
+    }
     let cli = Cli::parse();
+    match cli.command {
+        Some(Commands::Identity(args)) => return cli::commands::accounts::identities(args),
+        Some(Commands::Connector(args)) => return cli::commands::accounts::connectors(args),
+        Some(Commands::Setup(args)) => return cli::commands::accounts::setup(args),
+        _ => (),
+    }
     if let Some(Commands::Completions(args)) = cli.command {
         return cli::commands::completions::run(args, &mut Cli::command());
     }
@@ -25,7 +35,13 @@ fn main() -> Result<()> {
         Some(Commands::Path(args)) => cli::commands::path::run(args, &workspace),
         Some(Commands::Go(args)) => cli::commands::go::run(args, &workspace),
         Some(Commands::Change(args)) => cli::commands::change::run(args, &mut workspace),
-        Some(Commands::Shell(_) | Commands::Completions(_)) => unreachable!(),
+        Some(
+            Commands::Shell(_)
+            | Commands::Completions(_)
+            | Commands::Identity(_)
+            | Commands::Connector(_)
+            | Commands::Setup(_),
+        ) => unreachable!(),
         None => tui::run(workspace.view()?),
     }
 }

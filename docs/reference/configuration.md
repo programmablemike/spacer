@@ -49,7 +49,9 @@ The CLI and TUI use `<root>/.spacer/config.json`. Example with an absolute root:
 
 The three arrays are required on deserialization. Active selections are optional
 and omitted when unset. Projects are identified by name and space; changes by
-name, project, and space. The two active fields jointly identify the selected project. Schema version 1 is written on successful mutation. Unversioned configurations
+name, project, and space. The two active fields jointly identify the selected
+project. Local-only workspaces write schema version 1 on mutation; using project
+bindings or setup defaults writes schema version 2. Unversioned configurations
 are read as legacy version 0; future versions and unknown fields are
 rejected without rewriting them.
 
@@ -102,3 +104,10 @@ Git subprocesses use the selected repository and discard inherited repository-lo
 Git variables (such as `GIT_DIR`, `GIT_WORK_TREE`, and `GIT_INDEX_FILE`) and
 command-scoped Git configuration. Ordinary Git system, global, and repository
 configuration still applies. Spacer does not set your commit identity.
+
+## Remote setup metadata
+
+Schema 2 adds optional project bindings and setup defaults. User-level connectors
+and commit identities live outside the workspace; credentials remain in native
+secure storage. See [connectors and identities](connectors-identities.md) for
+schema compatibility, locations, selection rules, and authentication behavior.

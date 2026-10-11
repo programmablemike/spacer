@@ -20,6 +20,8 @@ impl From<Error> for BridgeError {
             Error::Persistence(_) => "persistence",
             Error::Filesystem(_) => "filesystem",
             Error::Git(_) => "git",
+            Error::Authentication(_) => "authentication",
+            Error::Remote(_) => "remote",
         };
         Self {
             kind,
@@ -207,7 +209,7 @@ impl Session {
         Ok(snapshot)
     }
 
-    fn workspace(&self, expected_root: &str) -> Result<Workspace> {
+    pub(crate) fn workspace(&self, expected_root: &str) -> Result<Workspace> {
         let root = self
             .root
             .as_ref()

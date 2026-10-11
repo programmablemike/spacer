@@ -920,3 +920,82 @@ dialog .input-row input {
     transition: none !important;
   }
 }
+
+.setup-screen {
+  max-width: 1080px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 48px;
+  overflow-y: auto;
+}
+.setup-steps {
+  display: flex;
+  gap: 24px;
+  margin: 24px 0;
+  flex-wrap: wrap;
+  color: var(--muted);
+}
+.setup-steps [aria-current] {
+  color: var(--ink);
+  font-weight: 700;
+}
+.setup-form {
+  max-width: 720px;
+  display: grid;
+  gap: 16px;
+  margin-top: 24px;
+}
+.setup-form label {
+  display: grid;
+  gap: 8px;
+}
+.setup-form input,
+.setup-form select {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #d9d7cf;
+  border-radius: 6px;
+}
+.setup-form .input-row {
+  display: flex;
+  gap: 12px;
+}
+.repository-selection {
+  max-height: 320px;
+  overflow-y: auto;
+}
+.setup-form .repository-choice {
+  display: flex;
+  align-items: center;
+  padding: 12px;
+  gap: 12px;
+  border-bottom: 1px solid #d9d7cf;
+}
+.repository-choice input {
+  width: auto;
+}
+.repository-choice span:first-of-type {
+  flex: 1;
+}
+.setup-cards {
+  display: grid;
+  gap: 12px;
+}
+.device-code {
+  font-size: 24px;
+  letter-spacing: 2px;
+}
+.table-scroll {
+  overflow-x: auto;
+  margin: 24px 0;
+}
+.table-scroll table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.table-scroll th,
+.table-scroll td {
+  padding: 12px;
+  text-align: left;
+  border-bottom: 1px solid #d9d7cf;
+}

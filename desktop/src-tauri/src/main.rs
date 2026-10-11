@@ -2,6 +2,7 @@
 
 mod bridge;
 mod composition;
+mod connections;
 #[cfg(feature = "native-smoke")]
 mod native_smoke;
 
@@ -75,18 +76,127 @@ async fn reveal_target(
     .await
 }
 
+async fn accounts_work<T: Send + 'static>(
+    state: &connections::SharedConnections,
+    work: impl FnOnce(&mut connections::SetupSession) -> Result<T> + Send + 'static,
+) -> Result<T> {
+    let state = Arc::clone(state);
+    tauri::async_runtime::spawn_blocking(move || {
+        let mut service = state
+            .lock()
+            .map_err(|_| BridgeError::internal("setup interrupted; restart Spacer"))?;
+        work(&mut service)
+    })
+    .await
+    .map_err(|_| BridgeError::internal("setup interrupted"))?
+}
+#[tauri::command]
+async fn connection_request(
+    state: State<'_, connections::SharedConnections>,
+    request: connections::Request,
+) -> Result<connections::Reply> {
+    accounts_work(&state, move |service| service.request(request)).await
+}
+#[tauri::command]
+async fn open_github_authorization(app: tauri::AppHandle) -> Result<()> {
+    app.opener()
+        .open_url("https://github.com/login/device", None::<&str>)
+        .map_err(|_| {
+            BridgeError::internal("could not open browser; visit https://github.com/login/device")
+        })
+}
+#[tauri::command]
+async fn plan_setup(
+    state: State<'_, SharedSession>,
+    accounts: State<'_, connections::SharedConnections>,
+    root: String,
+    space: String,
+    connector: String,
+    identity: Option<String>,
+    repositories: Vec<connections::RepositorySelection>,
+) -> Result<Vec<connections::PlanView>> {
+    let workspace = blocking(&state, move |session| session.workspace(&root)).await?;
+    accounts_work(&accounts, move |service| {
+        service.plan(
+            &workspace,
+            &space,
+            &connector,
+            identity.as_deref(),
+            &repositories,
+        )
+    })
+    .await
+}
+#[tauri::command]
+async fn execute_setup(
+    state: State<'_, SharedSession>,
+    accounts: State<'_, connections::SharedConnections>,
+    root: String,
+    id: String,
+) -> Result<()> {
+    let mut workspace = blocking(&state, move |session| session.workspace(&root)).await?;
+    accounts_work(&accounts, move |service| {
+        service.execute(&mut workspace, &id)
+    })
+    .await
+}
+#[tauri::command]
+async fn apply_commit_identity(
+    state: State<'_, SharedSession>,
+    accounts: State<'_, connections::SharedConnections>,
+    root: String,
+    space: String,
+    project: String,
+    identity: String,
+) -> Result<()> {
+    let mut workspace = blocking(&state, move |session| session.workspace(&root)).await?;
+    accounts_work(&accounts, move |service| {
+        service.apply(&mut workspace, &space, &project, &identity)
+    })
+    .await
+}
+#[tauri::command]
+async fn read_commit_identity(
+    state: State<'_, SharedSession>,
+    root: String,
+    space: String,
+    project: String,
+) -> Result<(Option<String>, Option<String>)> {
+    blocking(&state, move |session| {
+        session
+            .workspace(&root)?
+            .project_identity(&space, &project)
+            .map_err(Into::into)
+    })
+    .await
+}
+
 fn main() {
+    let arguments: Vec<String> = std::env::args().collect();
+    if arguments.get(1).map(String::as_str) == Some("--spacer-credential") {
+        if spacer_data::credential_helper(&arguments[2..]).is_err() {
+            std::process::exit(1);
+        }
+        return;
+    }
     let builder = tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_clipboard_manager::init())
         .manage(SharedSession::default())
+        .manage(connections::SharedConnections::default())
         .invoke_handler(tauri::generate_handler![
             open_workspace,
             read_workspace,
             mutate_workspace,
             resolve_target,
-            reveal_target
+            reveal_target,
+            connection_request,
+            open_github_authorization,
+            plan_setup,
+            execute_setup,
+            apply_commit_identity,
+            read_commit_identity
         ]);
     #[cfg(feature = "native-smoke")]
     let builder = builder

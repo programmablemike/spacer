@@ -2,7 +2,9 @@
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "main",
   "description": "Workspace UI, native folder selection, and writing copied paths.",
-  "windows": ["main"],
+  "windows": [
+    "main"
+  ],
   "permissions": [
     "core:default",
     "dialog:allow-open",
@@ -11,6 +13,12 @@
     "allow-read-workspace",
     "allow-mutate-workspace",
     "allow-reveal-target",
-    "allow-resolve-target"
+    "allow-resolve-target",
+    "allow-connection-request",
+    "allow-open-github-authorization",
+    "allow-plan-setup",
+    "allow-execute-setup",
+    "allow-apply-commit-identity",
+    "allow-read-commit-identity"
   ]
 }

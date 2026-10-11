@@ -29,6 +29,16 @@ npm ci
 npm run tauri -- dev
 ```
 
+## GitHub setup and commit identities
+
+Choose **Set up from GitHub** in the desktop to connect an account, select
+repositories, choose commit authorship, and review destinations before cloning.
+The CLI provides the same services through `spacer connector`, `spacer identity`,
+and `spacer setup`. Managed credentials use the system credential manager.
+
+See [GitHub setup](docs/how-to/github-setup.md) for authorization prerequisites,
+existing credentials, scripting, and recovery.
+
 ## Install the CLI
 
 Download a checksummed archive from the [alpha release](https://github.com/programmablemike/spacer/releases/tag/v0.0.1),
@@ -160,6 +170,8 @@ It does not create objects or change the parent shell's directory.
 | Space | Named group of projects, usually an organization or personal collection |
 | Project | Registered primary Git repository within a space |
 | Change | Linked Git worktree within a project |
+| Connector | Authenticated access to a GitHub account |
+| Identity | Explicit Git commit name and email, independent of remote access |
 
 Commands use explicit names and flags when provided. Otherwise, supported
 commands use environment overrides followed by saved defaults:
@@ -176,7 +188,8 @@ For command details, run `spacer --help` or a subcommand's `--help`.
 
 ## Current limitations
 
-- Clone, fetch, push, merge, and branch deletion remain user-managed Git operations.
+- Setup supports cloning existing GitHub.com repositories over HTTPS. Fetch, push,
+  merge, branch deletion, and remote repository creation remain user-managed.
 - `space delete` and `project delete` remove tracking records, not directories.
   Spaces must have no registered projects. Projects must have no legacy tracking
   entries; their Git worktrees can remain. Affected saved selections are cleared.

@@ -18,6 +18,16 @@ pub trait Filesystem: Send + Sync {
 
 /// Git mechanisms, independent of registration and active context.
 pub trait Git: Send + Sync {
+    fn commit_identity(&self, _repository: &Path) -> Result<(Option<String>, Option<String>)> {
+        Err(crate::Error::Git(
+            "authorship inspection is unavailable".into(),
+        ))
+    }
+    fn apply_identity(&self, _repository: &Path, _name: &str, _email: &str) -> Result<()> {
+        Err(crate::Error::Git(
+            "authorship configuration is unavailable".into(),
+        ))
+    }
     fn validate_repository(&self, repository: &Path) -> Result<()>;
     fn is_clean(&self, worktree: &Path) -> Result<bool>;
     fn initialize(&self, repository: &Path) -> Result<()>;

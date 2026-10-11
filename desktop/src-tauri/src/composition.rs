@@ -51,3 +51,12 @@ pub fn existing_directory(path: PathBuf) -> Result<PathBuf> {
     }
     Ok(path)
 }
+
+pub fn connections() -> Result<spacer_core::connections::Connections> {
+    Ok(spacer_core::connections::Connections::new(
+        spacer_data::JsonCatalog::new(spacer_data::catalog_directory()?),
+        std::sync::Arc::new(spacer_data::Github::new(std::sync::Arc::new(
+            spacer_data::NativeSecrets,
+        ))?),
+    ))
+}
